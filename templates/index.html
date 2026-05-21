@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CircuitSim</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ HEADER ══════════════════════════════════════ -->
+<header class="app-header">
+  <div class="header-brand">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect x="1" y="9" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/>
+      <rect x="17" y="9" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="5" y1="11" x2="9" y2="11" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M9 11 L10 7 L11.5 15 L13 7 L14 11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+      <line x1="14" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+    <span class="brand-name">CircuitSim</span>
+    <span class="brand-version">v0.1 — MVP</span>
+  </div>
+
+  <div class="toolbar" id="toolbar">
+    <div class="tool-group">
+      <button class="tool-btn active" data-tool="select" title="Seleziona / sposta (S)">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 2 L2 12 L5.5 9 L7.5 14 L9 13.5 L7 8.5 L11 8.5 Z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+        Seleziona
+      </button>
+      <button class="tool-btn" data-tool="wire" title="Filo di connessione (W)">
+        <svg width="16" height="16" viewBox="0 0 16 16"><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="2"/><circle cx="2" cy="8" r="1.5" fill="currentColor"/><circle cx="14" cy="8" r="1.5" fill="currentColor"/></svg>
+        Filo
+      </button>
+      <button class="tool-btn" data-tool="delete" title="Elimina (Del)">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" stroke-width="2"/></svg>
+        Elimina
+      </button>
+    </div>
+
+    <div class="tool-separator"></div>
+
+    <div class="tool-group">
+      <button class="tool-btn component-btn" data-tool="resistor" title="Resistenza (R)">
+        <svg width="32" height="16" viewBox="0 0 32 16">
+          <line x1="0" y1="8" x2="6" y2="8" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M6 8 L7.5 3 L9 13 L10.5 3 L12 13 L13.5 3 L15 13 L16.5 3 L18 8" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <line x1="18" y1="8" x2="32" y2="8" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        R
+      </button>
+      <button class="tool-btn component-btn" data-tool="capacitor" title="Condensatore (C)">
+        <svg width="32" height="16" viewBox="0 0 32 16">
+          <line x1="0" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="13" y1="2" x2="13" y2="14" stroke="currentColor" stroke-width="2"/>
+          <line x1="16" y1="2" x2="16" y2="14" stroke="currentColor" stroke-width="2"/>
+          <line x1="16" y1="8" x2="32" y2="8" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        C
+      </button>
+      <button class="tool-btn component-btn" data-tool="vsource" title="Generatore di tensione (V)">
+        <svg width="16" height="32" viewBox="0 0 16 32" style="height:20px;width:10px;">
+          <circle cx="8" cy="16" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <line x1="8" y1="9" x2="8" y2="4" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="8" y1="23" x2="8" y2="28" stroke="currentColor" stroke-width="1.5"/>
+          <text x="8" y="14" text-anchor="middle" font-size="6" fill="currentColor">+</text>
+          <text x="8" y="22" text-anchor="middle" font-size="6" fill="currentColor">−</text>
+        </svg>
+        V
+      </button>
+      <button class="tool-btn component-btn" data-tool="gnd" title="Massa (G)">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <line x1="8" y1="2" x2="8" y2="7" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="2"/>
+          <line x1="4" y1="10" x2="12" y2="10" stroke="currentColor" stroke-width="2"/>
+          <line x1="6" y1="13" x2="10" y2="13" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        GND
+      </button>
+      <!-- BJT NPN -->
+      <button class="tool-btn component-btn" data-tool="bjt_npn" title="Transistore BJT NPN (Q)">
+        <svg width="20" height="24" viewBox="0 0 40 48" style="height:24px;width:20px;">
+          <!-- filo base -->
+          <line x1="0" y1="24" x2="12" y2="24" stroke="currentColor" stroke-width="2"/>
+          <!-- barra verticale -->
+          <line x1="12" y1="10" x2="12" y2="38" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          <!-- collettore -->
+          <line x1="12" y1="16" x2="28" y2="4"  stroke="currentColor" stroke-width="2"/>
+          <!-- emettitore -->
+          <line x1="12" y1="32" x2="28" y2="44" stroke="currentColor" stroke-width="2"/>
+          <!-- freccia emettitore NPN -->
+          <polyline points="22,40 28,44 24,36" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/>
+        </svg>
+        NPN
+      </button>
+    </div>
+
+    <div class="tool-separator"></div>
+
+    <div class="tool-group">
+      <button class="tool-btn" id="btn-rotate" title="Ruota componente (E)">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M13.5 2.5 A6 6 0 1 0 14 9" stroke="currentColor" stroke-width="1.5" fill="none"/><polyline points="14,2 14,6 10,6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+        Ruota
+      </button>
+      <button class="tool-btn accent" id="btn-example" title="Carica circuito RC di esempio">
+        Esempio RC
+      </button>
+      <button class="tool-btn" id="btn-clear" title="Cancella tutto (Ctrl+Z)">Cancella</button>
+    </div>
+
+    <div class="toolbar-spacer"></div>
+
+    <button class="simulate-btn" id="btn-simulate">
+      <svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13" fill="currentColor"/></svg>
+      Simula
+    </button>
+    <div class="toolbar-group">
+      <button class="tool-btn" id="btn-zoom-in"  title="Zoom in (rotella mouse)">＋</button>
+      <button class="tool-btn" id="btn-zoom-out" title="Zoom out (rotella mouse)">－</button>
+      <button class="tool-btn" id="btn-zoom-fit" title="Adatta alla finestra">⊡</button>
+    </div>
+    <button class="tool-btn" id="btn-tool-text" data-tool="text"
+            title="Inserisci etichetta testo (T)">
+      <svg width="14" height="14" viewBox="0 0 14 14">
+        <text x="2" y="12" font-size="12" fill="currentColor" font-family="monospace" font-weight="bold">T</text>
+      </svg>
+      Testo
+    </button>
+    <button class="tool-btn" id="btn-show-nodes" title="Mostra/nascondi nodi di misura">
+      <svg width="14" height="14" viewBox="0 0 14 14">
+        <circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
+        <circle cx="7" cy="7" r="1" fill="currentColor"/>
+        <line x1="7" y1="1" x2="7" y2="4" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="7" y1="10" x2="7" y2="13" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="1" y1="7" x2="4" y2="7" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="10" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      Nodi
+    </button>
+    <button class="tool-btn stop-anim" id="btn-pause-anim" style="display:none" title="Pausa / Riprendi animazione">
+      <svg id="pause-icon" width="14" height="14" viewBox="0 0 14 14">
+        <rect x="2" y="2" width="3.5" height="10" rx="1" fill="currentColor"/>
+        <rect x="8.5" y="2" width="3.5" height="10" rx="1" fill="currentColor"/>
+      </svg>
+      <svg id="resume-icon" width="14" height="14" viewBox="0 0 14 14" style="display:none">
+        <polygon points="3,1 13,7 3,13" fill="currentColor"/>
+      </svg>
+      <span id="pause-label">Pausa</span>
+    </button>
+    <button class="tool-btn stop-anim" id="btn-stop-anim" style="display:none" title="Ferma animazione corrente">
+      <svg width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="2" width="10" height="10" fill="currentColor" rx="1"/></svg>
+      Stop
+    </button>
+    <div class="anim-speed-wrap" id="anim-speed-wrap" style="display:none">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/>
+        <polyline points="6.5,3.5 6.5,6.5 9,8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <input type="range" id="anim-speed" min="1" max="10" value="5" step="1" title="Velocità corrente">
+      <span id="anim-speed-val">5×</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════ MAIN ════════════════════════════════════════ -->
+<main class="app-main">
+
+<!-- ── TOP: 3-column schematic + controls ── -->
+<div class="main-top">
+
+  <!-- LEFT SIDEBAR: component info + parameters -->
+  <aside class="sidebar-left">
+    <div class="sidebar-section">
+      <div class="section-title">Componente selezionato</div>
+      <div id="comp-editor" class="comp-editor">
+        <div class="no-selection">Clicca un componente per modificarlo</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-title">Parametri rapidi</div>
+      <div class="param-row">
+        <label>R <span class="param-unit">Ω</span></label>
+        <input type="range" id="slider-r" min="1" max="5" step="0.01" value="4" class="param-slider"/>
+        <span class="param-val" id="val-r">10 kΩ</span>
+      </div>
+      <div class="param-row">
+        <label>C <span class="param-unit">F</span></label>
+        <input type="range" id="slider-c" min="-11" max="-6" step="0.01" value="-7.328" class="param-slider"/>
+        <span class="param-val" id="val-c">47 nF</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-title">Analisi</div>
+      <div class="analysis-select">
+        <label><input type="radio" name="analysis" value="ac" checked/> AC (Bode)</label>
+        <label><input type="radio" name="analysis" value="transient"/> Gradino</label>
+        <label><input type="radio" name="analysis" value="sinusoidal"/> Sinusoide</label>
+      </div>
+
+      <!-- Parametri AC -->
+      <div id="params-ac">
+        <div class="param-row" id="freq-range-row">
+          <label>f start</label>
+          <input type="number" id="freq-start" value="10" class="num-input"/> Hz
+        </div>
+        <div class="param-row" id="freq-stop-row">
+          <label>f stop</label>
+          <input type="number" id="freq-stop" value="100000" class="num-input"/> Hz
+        </div>
+      </div>
+
+      <!-- Parametri Sinusoide -->
+      <div id="params-sine" style="display:none">
+        <div class="param-row">
+          <label>Freq</label>
+          <input type="range" id="slider-sine-freq" min="1" max="5" step="0.01" value="2.529" class="param-slider"/>
+          <span class="param-val" id="val-sine-freq">338 Hz</span>
+        </div>
+        <div class="param-row">
+          <label>Amp</label>
+          <input type="number" id="sine-amp" value="1" step="0.1" min="0.01" class="num-input"/> V
+        </div>
+        <div class="param-row">
+          <label>Periodi</label>
+          <input type="number" id="sine-periods" value="6" step="1" min="2" max="50" class="num-input"/>
+        </div>
+        <div class="sine-info" id="sine-info"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-title">Netlist JSON</div>
+      <div class="netlist-preview" id="netlist-preview">—</div>
+    </div>
+  </aside>
+
+  <!-- CENTER: circuit canvas -->
+  <section class="canvas-section">
+    <canvas id="circuit-canvas"></canvas>
+    <div class="canvas-status" id="canvas-status">Pronto — seleziona uno strumento dalla barra in alto</div>
+  </section>
+
+  <!-- RIGHT SIDEBAR: simulation results -->
+  <aside class="sidebar-right">
+    <div class="sidebar-section">
+      <div class="section-title">Bode plot — Ampiezza</div>
+      <div class="chart-wrap">
+        <canvas id="chart-magnitude"></canvas>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-title">Bode plot — Fase</div>
+      <div class="chart-wrap">
+        <canvas id="chart-phase"></canvas>
+      </div>
+    </div>
+
+    <div class="sidebar-section" id="transient-section" style="display:none">
+      <div class="section-title">Risposta al gradino</div>
+      <div class="chart-wrap">
+        <canvas id="chart-transient"></canvas>
+      </div>
+    </div>
+
+    <div class="sidebar-section" id="sine-metrics-section" style="display:none">
+      <div class="section-title">Regime sinusoidale</div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-val" id="sm-gain">—</div>
+          <div class="metric-lbl">Guadagno (dB)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="sm-phase">—</div>
+          <div class="metric-lbl">Sfasamento (°)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="sm-vout">—</div>
+          <div class="metric-lbl">Vpicco out (V)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="sm-ratio">—</div>
+          <div class="metric-lbl">|Vout/Vin|</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-title">Metriche</div>
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-val" id="m-fc">—</div>
+          <div class="metric-lbl">f<sub>c</sub> (Hz)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="m-tau">—</div>
+          <div class="metric-lbl">τ (ms)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="m-phase">—</div>
+          <div class="metric-lbl">φ @ f<sub>c</sub></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="m-rolloff">—</div>
+          <div class="metric-lbl">Rolloff (dB/dec)</div>
+        </div>
+      </div>
+      <div class="solver-badge" id="solver-badge"></div>
+    </div>
+  </aside>
+
+</div><!-- /.main-top -->
+
+<!-- ── BOTTOM PANEL: V(t) + V(f) sempre visibili ── -->
+<div class="bottom-panel">
+
+  <div class="bottom-chart-area">
+    <div class="bottom-chart-header">
+      <span class="bottom-chart-title" id="vt-title">V(t)</span>
+      <span class="bottom-badge probe-node-badge" id="badge-probe" style="display:none"></span>
+      <span class="bottom-badge" id="badge-vt">analitico</span>
+      <button class="chart-zoom-reset" id="zoom-reset-vt" title="Reset zoom (doppio click)">⟲</button>
+    </div>
+    <div class="bottom-chart-wrap">
+      <canvas id="chart-vt"></canvas>
+    </div>
+  </div>
+
+  <div class="bottom-divider"></div>
+
+  <div class="bottom-chart-area">
+    <div class="bottom-chart-header">
+      <span class="bottom-chart-title" id="vf-title">V(f) — Risposta in frequenza</span>
+      <span class="bottom-badge" id="badge-vf">analitico</span>
+      <button class="chart-zoom-reset" id="zoom-reset-vf" title="Reset zoom (doppio click)">⟲</button>
+    </div>
+    <div class="bottom-chart-wrap">
+      <canvas id="chart-vf"></canvas>
+    </div>
+  </div>
+
+</div><!-- /.bottom-panel -->
+
+</main>
+
+<!-- Editor inline per etichette testo e nomi componenti -->
+<div id="inline-editor-wrap" style="display:none;position:fixed;z-index:9999">
+  <input id="inline-editor-input" type="text"
+         placeholder="Etichetta…"
+         autocomplete="off" spellcheck="false"/>
+</div>
+
+<script src="{% static 'js/circuit-canvas.js' %}"></script>
+<script src="{% static 'js/current-animator.js' %}"></script>
+<script src="{% static 'js/bode-plot.js' %}"></script>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>
