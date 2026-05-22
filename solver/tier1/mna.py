@@ -106,11 +106,15 @@ def solve_transient(netlist: dict) -> dict:
     output_node = _resolve_output_node(netlist, node_idx)
     v_in_mag = _source_amplitude(vsources)
 
-    # State: node voltages at previous step (capacitor history currents)
-    v_prev = np.zeros(n_nodes, dtype=float)
-    cap_hist = np.zeros(n_nodes, dtype=float)  # Backward Euler history for caps
-
+    v_prev    = np.zeros(n_nodes, dtype=float)
+    # Corrente storica degli induttori (Backward Euler companion)
+    ind_curr: dict[str, float] = {
+        c.get("id", f"_ind_{id(c)}"): 0.0
+        for c in netlist["components"]
+        if c["type"] == "inductor"
+    }
     voltages: list[float] = []
+    node_traces: dict[str, list[float]] = {n: [] for n in node_list}
 
     for _t in times:
         A, b = _build_mna_transient(
@@ -121,29 +125,43 @@ def solve_transient(netlist: dict) -> dict:
             size,
             dt,
             v_prev,
+            ind_curr,
         )
         try:
             v = np.linalg.solve(A, b)
         except np.linalg.LinAlgError:
             voltages.append(float("nan"))
+            for n in node_list:
+                node_traces[n].append(float("nan"))
             continue
 
         v_out = _node_voltage(v, output_node, node_idx)
         voltages.append(float(v_out.real))
+        for n, idx in node_idx.items():
+            node_traces[n].append(float(v[idx].real))
         v_prev = np.real(v[:n_nodes])
+        # Aggiorna corrente induttori: i_L(n) = G_eq*V_L(n) + i_L(n-1)
+        for comp in netlist["components"]:
+            if comp["type"] == "inductor":
+                cid = comp.get("id", f"_ind_{id(comp)}")
+                pi = node_idx.get(comp["nodes"][0]) if comp["nodes"][0] not in _GND else None
+                ni = node_idx.get(comp["nodes"][1]) if comp["nodes"][1] not in _GND else None
+                vL = (float(v[pi].real) if pi is not None else 0.0) \
+                   - (float(v[ni].real) if ni is not None else 0.0)
+                ind_curr[cid] += (dt / comp["value"]) * vL
 
-    # Key metrics
     tau = t_end / 5.0
     metrics = {
         "time_constant_ms": round(tau * 1000, 4),
-        "final_voltage_v": round(float(v_in_mag), 4),
-        "t_end_ms": round(t_end * 1000, 4),
+        "final_voltage_v":  round(float(v_in_mag), 4),
+        "t_end_ms":         round(t_end * 1000, 4),
     }
 
     return {
-        "times": (times * 1000).tolist(),   # convert to ms for display
-        "voltages": voltages,
-        "metrics": metrics,
+        "times":       (times * 1000).tolist(),
+        "voltages":    voltages,
+        "node_traces": node_traces,
+        "metrics":     metrics,
     }
 
 
@@ -183,36 +201,51 @@ def solve_sinusoidal(netlist: dict) -> dict:
     size    = n_nodes + n_src
 
     output_node = _resolve_output_node(netlist, node_idx)
-    v_prev      = np.zeros(n_nodes, dtype=float)
+    v_prev   = np.zeros(n_nodes, dtype=float)
+    ind_curr = {c.get("id", f"_ind_{id(c)}"): 0.0
+                for c in netlist["components"] if c["type"] == "inductor"}
 
     vin_vals:  list[float] = []
     vout_vals: list[float] = []
+    node_traces: dict[str, list[float]] = {n: [] for n in node_list}
 
     for t in times:
         v_now = amplitude * np.sin(2.0 * np.pi * freq * t)
         A, b  = _build_mna_sine(
             netlist["components"], node_idx, vsources,
-            n_nodes, size, dt, v_prev, v_now,
+            n_nodes, size, dt, v_prev, v_now, ind_curr,
         )
         try:
             v = np.linalg.solve(A, b)
         except np.linalg.LinAlgError:
             vin_vals.append(float(v_now))
             vout_vals.append(float("nan"))
+            for n in node_list:
+                node_traces[n].append(float("nan"))
             continue
 
         v_out = _node_voltage(v, output_node, node_idx)
         vin_vals.append(float(v_now))
         vout_vals.append(float(v_out.real))
+        for n, idx in node_idx.items():
+            node_traces[n].append(float(v[idx].real))
         v_prev = np.real(v[:n_nodes])
+        for comp in netlist["components"]:
+            if comp["type"] == "inductor":
+                pi = node_idx.get(comp["nodes"][0]) if comp["nodes"][0] not in _GND else None
+                ni = node_idx.get(comp["nodes"][1]) if comp["nodes"][1] not in _GND else None
+                vL = (float(v[pi].real) if pi is not None else 0.0) \
+                   - (float(v[ni].real) if ni is not None else 0.0)
+                ind_curr[comp.get("id", f"_ind_{id(comp)}")] += (dt / comp["value"]) * vL
 
     metrics = _compute_sine_metrics(times, vin_vals, vout_vals, freq, amplitude)
 
     return {
-        "times":   (times * 1000).tolist(),   # in ms
-        "vin":     vin_vals,
-        "vout":    vout_vals,
-        "metrics": metrics,
+        "times":        (times * 1000).tolist(),   # in ms
+        "vin":          vin_vals,
+        "vout":         vout_vals,
+        "node_traces":  node_traces,               # tutti i nodi (per oscilloscopio)
+        "metrics":      metrics,
     }
 
 
@@ -225,8 +258,11 @@ def _build_mna_sine(
     dt: float,
     v_prev: np.ndarray,
     v_now: float,
+    ind_curr: dict[str, float] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """MNA Backward Euler con sorgente di tensione sinusoidale al passo t."""
+    if ind_curr is None:
+        ind_curr = {}
     A = np.zeros((size, size), dtype=float)
     b = np.zeros(size, dtype=float)
 
@@ -240,33 +276,40 @@ def _build_mna_sine(
         elif ctype == "capacitor":
             G_eq   = comp["value"] / dt
             _stamp_admittance(A, G_eq, cnodes, node_idx)
-
             p_node, n_node = cnodes[0], cnodes[1]
             pi = node_idx.get(p_node) if p_node not in _GND else None
             ni = node_idx.get(n_node) if n_node not in _GND else None
-
             v_cap = (v_prev[pi] if pi is not None else 0.0) \
                   - (v_prev[ni] if ni is not None else 0.0)
             i_hist = G_eq * v_cap
             if pi is not None: b[pi] += i_hist
             if ni is not None: b[ni] -= i_hist
 
+        elif ctype == "inductor":
+            G_eq   = dt / comp["value"]
+            cid    = comp.get("id", f"_ind_{id(comp)}")
+            i_hist = ind_curr.get(cid, 0.0)
+            _stamp_admittance(A, G_eq, cnodes, node_idx)
+            p_node, n_node = cnodes[0], cnodes[1]
+            pi = node_idx.get(p_node) if p_node not in _GND else None
+            ni = node_idx.get(n_node) if n_node not in _GND else None
+            # Norton I_hist flows p->n (same dir as i_L)
+            if pi is not None: b[pi] -= i_hist
+            if ni is not None: b[ni] += i_hist
+
         elif ctype == "voltage_source":
             k       = vsources.index(comp)
             src_row = n_nodes + k
             p_node, n_node = cnodes[0], cnodes[1]
-
             if p_node not in _GND:
                 pi = node_idx[p_node]
                 A[pi][src_row] += 1.0
                 A[src_row][pi] += 1.0
-
             if n_node not in _GND:
                 ni = node_idx[n_node]
                 A[ni][src_row] -= 1.0
                 A[src_row][ni] -= 1.0
-
-            b[src_row] = v_now   # valore istantaneo della sinusoide
+            b[src_row] = v_now
 
         elif ctype == "bjt_npn":
             beta = float(comp.get("value", 100) or 100)
@@ -448,11 +491,15 @@ def _build_mna_transient(
     size: int,
     dt: float,
     v_prev: np.ndarray,
+    ind_curr: dict[str, float] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Backward Euler companion model for transient analysis.
-    Capacitor → G_eq = C/dt in parallel with current source I_hist = C/dt * V_prev.
+    Capacitor  → G_eq = C/dt  parallel I_hist = C/dt * V_prev
+    Inductor   → G_eq = dt/L  parallel I_hist = i_L(prev)
     """
+    if ind_curr is None:
+        ind_curr = {}
     A = np.zeros((size, size), dtype=float)
     b = np.zeros(size, dtype=float)
 
@@ -465,42 +512,40 @@ def _build_mna_transient(
             _stamp_admittance(A, Y, cnodes, node_idx)
 
         elif ctype == "capacitor":
-            # Backward Euler companion: G = C/dt, I_hist from previous step
             G_eq = comp["value"] / dt
             _stamp_admittance(A, G_eq, cnodes, node_idx)
-
-            # History current source
             p_node, n_node = cnodes[0], cnodes[1]
             pi = node_idx.get(p_node) if p_node not in _GND else None
             ni = node_idx.get(n_node) if n_node not in _GND else None
+            v_cap_prev = (v_prev[pi] if pi is not None else 0.0) \
+                       - (v_prev[ni] if ni is not None else 0.0)
+            i_hist = G_eq * v_cap_prev
+            if pi is not None: b[pi] += i_hist
+            if ni is not None: b[ni] -= i_hist
 
-            v_cap_prev = 0.0
-            if pi is not None:
-                v_cap_prev += v_prev[pi]
-            if ni is not None:
-                v_cap_prev -= v_prev[ni]
-
-            i_hist = G_eq * v_cap_prev  # current source value
-            if pi is not None:
-                b[pi] += i_hist
-            if ni is not None:
-                b[ni] -= i_hist
+        elif ctype == "inductor":
+            G_eq   = dt / comp["value"]
+            i_hist = ind_curr.get(comp.get("id", f"_ind_{id(comp)}"), 0.0)
+            _stamp_admittance(A, G_eq, cnodes, node_idx)
+            p_node, n_node = cnodes[0], cnodes[1]
+            pi = node_idx.get(p_node) if p_node not in _GND else None
+            ni = node_idx.get(n_node) if n_node not in _GND else None
+            # Norton I_hist flows p->n (same dir as i_L)
+            if pi is not None: b[pi] -= i_hist
+            if ni is not None: b[ni] += i_hist
 
         elif ctype == "voltage_source":
             k = vsources.index(comp)
             src_row = n_nodes + k
             p_node, n_node = cnodes[0], cnodes[1]
-
             if p_node not in _GND:
                 pi = node_idx[p_node]
                 A[pi][src_row] += 1.0
                 A[src_row][pi] += 1.0
-
             if n_node not in _GND:
                 ni = node_idx[n_node]
                 A[ni][src_row] -= 1.0
                 A[src_row][ni] -= 1.0
-
             b[src_row] = float(comp.get("value", 1.0))
 
         elif ctype == "bjt_npn":

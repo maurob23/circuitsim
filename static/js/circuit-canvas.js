@@ -71,6 +71,17 @@ const COMP_DEFS = {
     netlistType: null,   // GND is not a netlist component — it labels a node
   },
 
+  inductor: {
+    label: 'Induttore',
+    terminals: [
+      { id: 'a', lx:  0, ly: 0 },
+      { id: 'b', lx: 80, ly: 0 },
+    ],
+    defaultValue: 1e-3,   // 1 mH
+    unit: 'H',
+    netlistType: 'inductor',
+  },
+
   // BJT NPN — terminali: b=Base (origine), c=Collettore, e=Emettitore
   // Layout: B a sinistra (0,0), C in alto a destra (40,-40), E in basso a destra (40,40)
   bjt_npn: {
@@ -118,6 +129,12 @@ function formatValue(value, type) {
   }
   if (type === 'vsource')  return `${+value.toPrecision(4)} V`;
   if (type === 'bjt_npn') return `β=${+value}`;
+  if (type === 'inductor') {
+    if (value >= 1)      return `${+(value).toPrecision(4)} H`;
+    if (value >= 1e-3)   return `${+(value / 1e-3).toPrecision(4)} mH`;
+    if (value >= 1e-6)   return `${+(value / 1e-6).toPrecision(4)} µH`;
+    return `${+(value / 1e-9).toPrecision(4)} nH`;
+  }
   return String(value);
 }
 
@@ -257,6 +274,34 @@ class CircuitCanvas {
     this._emitChange();
   }
 
+  /** Serializza il circuito come oggetto JSON. */
+  exportCircuit() {
+    return {
+      version:    '1.0',
+      nextId:     this._nextId,
+      components: JSON.parse(JSON.stringify(this.components)),
+      wires:      JSON.parse(JSON.stringify(this.wires)),
+      texts:      JSON.parse(JSON.stringify(this.texts)),
+    };
+  }
+
+  /**
+   * Carica un circuito da un oggetto JSON (prodotto da exportCircuit).
+   * Restituisce true in caso di successo, false se il formato non è riconosciuto.
+   */
+  importCircuit(data) {
+    if (!data || !Array.isArray(data.components)) return false;
+    this.clearAll();
+    this.components = data.components  ?? [];
+    this.wires      = data.wires       ?? [];
+    this.texts      = data.texts       ?? [];
+    this._nextId    = data.nextId      ?? (this.components.length + this.texts.length + 2);
+    this.selected   = null;
+    this.render();
+    this._emitChange();
+    return true;
+  }
+
   loadExample() {
     this.clearAll();
     const G = this.GRID;
@@ -284,7 +329,7 @@ class CircuitCanvas {
   _makeComp(type, x, y, rotation, value) {
     const n      = this._nextId++;
     const prefix = { resistor: 'R', capacitor: 'C', vsource: 'V', gnd: 'GND',
-                     bjt_npn: 'Q' }[type] ?? type[0].toUpperCase();
+                     inductor: 'L', bjt_npn: 'Q' }[type] ?? type[0].toUpperCase();
     const label  = type === 'gnd' ? 'GND' : `${prefix}${n}`;
     const comp   = { id: `${type}_${n}`, label, type, x, y, rotation: rotation || 0, value };
     if (type === 'bjt_npn') comp.ic_q_ma = 1.0;   // IC quiescente default 1 mA
@@ -963,6 +1008,7 @@ class CircuitCanvas {
       case 'c': case 'C': this.setTool('capacitor'); break;
       case 'v': case 'V': this.setTool('vsource');   break;
       case 'g': case 'G': this.setTool('gnd');       break;
+      case 'l': case 'L': this.setTool('inductor');  break;
       case 'q': case 'Q': this.setTool('bjt_npn');  break;
       case 'e': case 'E': this.rotateSelected();     break;
       case 'Delete':
@@ -1249,8 +1295,9 @@ class CircuitCanvas {
     switch (comp.type) {
       case 'resistor':   this._drawResistor(ctx);  break;
       case 'capacitor':  this._drawCapacitor(ctx); break;
-      case 'vsource':    this._drawVSource(ctx);   break;
-      case 'gnd':        this._drawGnd(ctx);       break;
+      case 'vsource':    this._drawVSource(ctx);    break;
+      case 'gnd':        this._drawGnd(ctx);        break;
+      case 'inductor':   this._drawInductor(ctx);   break;
       case 'bjt_npn':    this._drawBJT(ctx, false); break;
     }
 
@@ -1387,6 +1434,27 @@ class CircuitCanvas {
       ctx.lineTo( ln.w / 2, ln.y);
       ctx.stroke();
     }
+  }
+
+  /** Induttore: 4 semiarchi sopra la linea, da (0,0) a (80,0). */
+  _drawInductor(ctx) {
+    ctx.lineWidth = 2;
+    ctx.lineCap   = 'round';
+    const bumps = 4;
+    const bumpW = 80 / bumps;    // 20 px ciascuno
+    const r     = bumpW / 2;     // 10 px raggio
+
+    ctx.beginPath();
+    for (let i = 0; i < bumps; i++) {
+      const cx = r + i * bumpW;
+      ctx.arc(cx, 0, r, Math.PI, 0, false);   // semicerchio superiore
+    }
+    ctx.stroke();
+
+    // Bretelle orizzontali alle estremità
+    ctx.beginPath();
+    ctx.moveTo(0, 0);  ctx.lineTo(0, 0);   // la prima arc inizia da (0,0) già
+    ctx.stroke();
   }
 
   /**

@@ -35,6 +35,49 @@ const bode      = new BodePlot('chart-magnitude', 'chart-phase');
 const transient = new TransientPlot('chart-transient');
 const animator  = new CurrentAnimator(canvas);
 
+// ─── Oscilloscopio ───────────────────────────────────────────────────────────
+
+const scope = new Oscilloscope('scope-canvas', 'oscilloscope-panel');
+let _scopeNodeTraces = {};   // ultime tracce disponibili (aggiornate dopo ogni simulazione)
+
+document.getElementById('btn-oscilloscope').addEventListener('click', () => scope.toggle());
+document.getElementById('btn-scope-close') .addEventListener('click', () => scope.show(false));
+
+// Canali CH1–CH4: sync dropdown e vdiv
+[1, 2, 3, 4].forEach(ch => {
+  const sel   = document.getElementById(`scope-ch${ch}-node`);
+  const vdiv  = document.getElementById(`scope-ch${ch}-vdiv`);
+  if (sel)  sel .addEventListener('change', () => {
+    scope.setChannel(ch - 1, sel.value || null);
+    scope.setData(scope.times, _scopeNodeTraces);
+  });
+  if (vdiv) vdiv.addEventListener('change', () => {
+    scope.channels[ch - 1].vdiv = parseFloat(vdiv.value) || 1.0;
+    scope.draw();
+  });
+});
+
+document.getElementById('scope-tdiv').addEventListener('change', e => {
+  scope.tdiv = parseFloat(e.target.value) || 1.0;
+  scope.draw();
+});
+
+/** Popola i dropdown dei canali con i nodi disponibili. */
+function _updateScopeNodeSelectors(nodeNames) {
+  [1, 2, 3, 4].forEach(ch => {
+    const sel = document.getElementById(`scope-ch${ch}-node`);
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">— off —</option>';
+    nodeNames.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      if (n === prev) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
+}
+
 // ─── Bottom panel charts ──────────────────────────────────────────────────────
 
 let vtChart = null;
@@ -267,6 +310,7 @@ document.getElementById('toolbar').addEventListener('click', e => {
     delete:    'Elimina componente, filo o etichetta',
     resistor:  'Posiziona resistenza (clic sulla griglia)',
     capacitor: 'Posiziona condensatore',
+    inductor:  'Posiziona induttore (1 mH default)',
     vsource:   'Posiziona generatore V',
     gnd:       'Posiziona massa',
     bjt_npn:   'Posiziona BJT NPN — B=origine, C=alto-destra, E=basso-destra',
@@ -287,6 +331,49 @@ document.getElementById('btn-example').addEventListener('click', () => {
 document.getElementById('btn-zoom-in') .addEventListener('click', () => canvas.zoomBy(1.25));
 document.getElementById('btn-zoom-out').addEventListener('click', () => canvas.zoomBy(0.8));
 document.getElementById('btn-zoom-fit').addEventListener('click', () => canvas.fitAll());
+
+// ─── Salva circuito ───────────────────────────────────────────────────────
+document.getElementById('btn-save-circuit').addEventListener('click', () => {
+  const data = canvas.exportCircuit();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `circuitsim_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  setStatus('Circuito salvato come file JSON.');
+});
+
+// ─── Carica circuito ──────────────────────────────────────────────────────
+document.getElementById('btn-load-circuit').addEventListener('click', () => {
+  document.getElementById('file-input-circuit').click();
+});
+document.getElementById('file-input-circuit').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (canvas.importCircuit(data)) {
+        setStatus(`Circuito caricato: ${file.name}`);
+        animator.stop(); showAnimControls(false);
+        canvas.clearNodeOverlay(); _probeNode = null;
+        document.getElementById('badge-probe').style.display = 'none';
+        clearAllDS(vfChart); clearAllDS(vtChart);
+        updateNetlistPreview();
+      } else {
+        setStatus('File non valido — formato circuito non riconosciuto.', 'error');
+      }
+    } catch {
+      setStatus('Errore nel parsing del file JSON.', 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';   // reset per permettere ricaricamento dello stesso file
+});
 
 document.getElementById('btn-clear').addEventListener('click', () => {
   animator.stop();
@@ -751,6 +838,33 @@ function handleSimResult(data) {
     _showSineResult(data);
     // Anima corrente per segnale sinusoidale
     _startSineAnimation(r, buildAnalysisOptions().frequency);
+  }
+
+  // ── Oscilloscopio: aggiorna tracce se disponibili ─────────────────────────
+  if (r.node_traces && r.times) {
+    _scopeNodeTraces = r.node_traces;
+    const nodeNames  = Object.keys(r.node_traces);
+    _updateScopeNodeSelectors(nodeNames);
+    // Auto-assegna CH1 al primo nodo non ancora assegnato
+    if (!scope.channels[0].nodeId && nodeNames.length > 0) {
+      scope.channels[0].nodeId  = nodeNames[0];
+      scope.channels[0].enabled = true;
+      const sel = document.getElementById('scope-ch1-node');
+      if (sel) sel.value = nodeNames[0];
+    }
+    // Adatta tdiv automaticamente: circa 2 periodi visibili per default
+    const totalMs = r.times[r.times.length - 1];
+    const autoTdiv = totalMs / 10;
+    scope.tdiv = autoTdiv > 0 ? autoTdiv : 1.0;
+    const tdivSel = document.getElementById('scope-tdiv');
+    if (tdivSel) {
+      // Seleziona il valore più vicino
+      const opts = Array.from(tdivSel.options).map(o => parseFloat(o.value));
+      const best = opts.reduce((a, b) => Math.abs(b - scope.tdiv) < Math.abs(a - scope.tdiv) ? b : a);
+      tdivSel.value = String(best);
+      scope.tdiv    = best;
+    }
+    scope.setData(r.times, _scopeNodeTraces);
   }
 
   const s = data.solver_info;

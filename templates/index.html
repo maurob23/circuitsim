@@ -81,6 +81,17 @@
         </svg>
         GND
       </button>
+      <!-- Induttore -->
+      <button class="tool-btn component-btn" data-tool="inductor" title="Induttore (L)">
+        <svg width="32" height="16" viewBox="0 0 80 16">
+          <line x1="0" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10,8 A10,10 0 0,1 30,8" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <path d="M30,8 A10,10 0 0,1 50,8" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <path d="M50,8 A10,10 0 0,1 70,8" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <line x1="70" y1="8" x2="80" y2="8" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        L
+      </button>
       <!-- BJT NPN -->
       <button class="tool-btn component-btn" data-tool="bjt_npn" title="Transistore BJT NPN (Q)">
         <svg width="20" height="24" viewBox="0 0 40 48" style="height:24px;width:20px;">
@@ -109,7 +120,25 @@
       <button class="tool-btn accent" id="btn-example" title="Carica circuito RC di esempio">
         Esempio RC
       </button>
-      <button class="tool-btn" id="btn-clear" title="Cancella tutto (Ctrl+Z)">Cancella</button>
+      <button class="tool-btn" id="btn-clear" title="Cancella tutto">Cancella</button>
+      <!-- Salva / Carica -->
+      <button class="tool-btn" id="btn-save-circuit" title="Salva circuito come file JSON">
+        <svg width="14" height="14" viewBox="0 0 14 14">
+          <path d="M2 2 h8 l2 2 v8 a1 1 0 0 1-1 1 H3 a1 1 0 0 1-1-1 Z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+          <rect x="4" y="2" width="5" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <rect x="3" y="8" width="8" height="3" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/>
+        </svg>
+        Salva
+      </button>
+      <button class="tool-btn" id="btn-load-circuit" title="Carica circuito da file JSON">
+        <svg width="14" height="14" viewBox="0 0 14 14">
+          <path d="M2 4 h4 l1.5 1.5 H12 v7 a0.5 0.5 0 0 1-.5.5 H2.5 a0.5 0.5 0 0 1-.5-.5 Z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+          <line x1="7" y1="7" x2="7" y2="11" stroke="currentColor" stroke-width="1.5"/>
+          <polyline points="5,9 7,11 9,9" stroke="currentColor" stroke-width="1.3" fill="none"/>
+        </svg>
+        Carica
+      </button>
+      <input type="file" id="file-input-circuit" accept=".json" style="display:none"/>
     </div>
 
     <div class="toolbar-spacer"></div>
@@ -140,6 +169,16 @@
         <line x1="10" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.2"/>
       </svg>
       Nodi
+    </button>
+    <button class="tool-btn" id="btn-oscilloscope" title="Apri / chiudi oscilloscopio multi-canale">
+      <svg width="14" height="14" viewBox="0 0 14 14">
+        <rect x="1" y="1" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+        <polyline points="2,7 4,4 6,9 8,3 10,7 12,6" stroke="#58a6ff" stroke-width="1.3" fill="none"/>
+        <line x1="4"  y1="11" x2="4"  y2="13" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="10" y1="11" x2="10" y2="13" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="3"  y1="13" x2="11" y2="13" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      Scope
     </button>
     <button class="tool-btn stop-anim" id="btn-pause-anim" style="display:none" title="Pausa / Riprendi animazione">
       <svg id="pause-icon" width="14" height="14" viewBox="0 0 14 14">
@@ -347,6 +386,61 @@
 
 </div><!-- /.bottom-panel -->
 
+<!-- ═══════════════════════════ OSCILLOSCOPIO MULTI-CANALE ═══════════════════════════ -->
+<div id="oscilloscope-panel" style="display:none">
+  <div class="scope-header">
+    <span class="scope-title">
+      <svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align:middle;margin-right:6px">
+        <rect x="1" y="1" width="12" height="10" rx="1" stroke="#58a6ff" stroke-width="1.3" fill="none"/>
+        <polyline points="2,7 4,4 6,9 8,3 10,7 12,6" stroke="#58a6ff" stroke-width="1.3" fill="none"/>
+      </svg>
+      Oscilloscopio
+    </span>
+    <!-- Controlli canali -->
+    <div class="scope-ch-controls">
+      <label class="scope-ch-label" style="color:#58a6ff">CH1</label>
+      <select id="scope-ch1-node" class="scope-node-sel"><option value="">— off —</option></select>
+      <input  type="number" id="scope-ch1-vdiv" class="scope-vdiv-input" value="1.0" step="0.5" min="0.1" title="V/div CH1"/>
+      <span class="scope-vdiv-unit">V/div</span>
+
+      <label class="scope-ch-label" style="color:#3fb950">CH2</label>
+      <select id="scope-ch2-node" class="scope-node-sel"><option value="">— off —</option></select>
+      <input  type="number" id="scope-ch2-vdiv" class="scope-vdiv-input" value="1.0" step="0.5" min="0.1" title="V/div CH2"/>
+      <span class="scope-vdiv-unit">V/div</span>
+
+      <label class="scope-ch-label" style="color:#f78166">CH3</label>
+      <select id="scope-ch3-node" class="scope-node-sel"><option value="">— off —</option></select>
+      <input  type="number" id="scope-ch3-vdiv" class="scope-vdiv-input" value="1.0" step="0.5" min="0.1" title="V/div CH3"/>
+      <span class="scope-vdiv-unit">V/div</span>
+
+      <label class="scope-ch-label" style="color:#d2a8ff">CH4</label>
+      <select id="scope-ch4-node" class="scope-node-sel"><option value="">— off —</option></select>
+      <input  type="number" id="scope-ch4-vdiv" class="scope-vdiv-input" value="1.0" step="0.5" min="0.1" title="V/div CH4"/>
+      <span class="scope-vdiv-unit">V/div</span>
+    </div>
+    <!-- Base dei tempi -->
+    <div class="scope-time-controls">
+      <label style="color:#8b949e;font-size:11px">Base tempi</label>
+      <select id="scope-tdiv" class="scope-node-sel" title="ms per divisione">
+        <option value="0.1">0.1 ms/div</option>
+        <option value="0.2">0.2 ms/div</option>
+        <option value="0.5">0.5 ms/div</option>
+        <option value="1"  selected>1 ms/div</option>
+        <option value="2">2 ms/div</option>
+        <option value="5">5 ms/div</option>
+        <option value="10">10 ms/div</option>
+        <option value="20">20 ms/div</option>
+        <option value="50">50 ms/div</option>
+      </select>
+      <span style="color:#8b949e;font-size:10px;margin-left:8px">
+        Click = cursore &nbsp;|&nbsp; Doppio-click = rimuovi cursori
+      </span>
+    </div>
+    <button class="tool-btn" id="btn-scope-close" style="margin-left:auto;padding:3px 10px">✕</button>
+  </div>
+  <canvas id="scope-canvas" class="scope-canvas"></canvas>
+</div>
+
 </main>
 
 <!-- Editor inline per etichette testo e nomi componenti -->
@@ -359,6 +453,7 @@
 <script src="{% static 'js/circuit-canvas.js' %}"></script>
 <script src="{% static 'js/current-animator.js' %}"></script>
 <script src="{% static 'js/bode-plot.js' %}"></script>
+<script src="{% static 'js/oscilloscope.js' %}"></script>
 <script src="{% static 'js/app.js' %}"></script>
 </body>
 </html>
