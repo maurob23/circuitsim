@@ -6,6 +6,8 @@
  *  - Cursori verticali di misura (Δt, ΔV)
  *  - Scala tempo (div/ms) e tensione (V/div) per canale
  *  - Trigger sul canale 1 (rising edge)
+ *  - Zoom temporale con rotella del mouse
+ *  - Pan orizzontale con tasto destro + trascina
  */
 
 'use strict';
@@ -13,6 +15,8 @@
 class Oscilloscope {
   static CH_COLORS = ['#58a6ff', '#3fb950', '#f78166', '#d2a8ff'];
   static CH_NAMES  = ['CH1', 'CH2', 'CH3', 'CH4'];
+  // Valori discreti di tdiv disponibili (ms/div)
+  static TDIV_STEPS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50];
 
   constructor(canvasId, panelId) {
     this.canvas   = document.getElementById(canvasId);
@@ -27,13 +31,16 @@ class Oscilloscope {
       { nodeId: null, label: 'CH4', vdiv: 1.0, offset: 0, enabled: false },
     ];
 
-    this.times      = [];         // array tempi in ms
-    this.nodeTraces = {};         // { nodeId: [v0, v1, ...] }
-    this.tdiv       = 1.0;        // ms per divisione
-    this.trigLevel  = 0.0;        // V soglia trigger
-    this.trigOffset = 0;          // campione di riferimento (post-trigger)
-    this._cursors   = [null, null]; // posizioni pixel cursori [C1, C2]
-    this._dragging  = null;
+    this.times       = [];          // array tempi in ms
+    this.nodeTraces  = {};          // { nodeId: [v0, v1, ...] }
+    this.tdiv        = 1.0;         // ms per divisione
+    this.trigLevel   = 0.0;         // V soglia trigger
+    this.trigOffset  = 0;           // campione di riferimento (post-trigger)
+    this._panOffsetMs = 0;          // offset pan in ms rispetto al trigger
+    this._cursors    = [null, null]; // posizioni pixel cursori [C1, C2]
+    this._dragging   = null;        // indice cursore trascinato (0|1|null)
+    this._panDragging = false;      // flag pan attivo (tasto destro)
+    this._panStartX  = 0;           // x pixel dove è iniziato il pan
 
     this._setupCanvasEvents();
   }
@@ -42,6 +49,7 @@ class Oscilloscope {
   setData(times, nodeTraces) {
     this.times      = times       ?? [];
     this.nodeTraces = nodeTraces  ?? {};
+    this._panOffsetMs = 0;        // reset pan ad ogni nuova simulazione
     this._findTrigger();
     this.draw();
   }
@@ -63,7 +71,9 @@ class Oscilloscope {
     if (!this.panel) return;
     const vis = this.panel.style.display === 'none' || !this.panel.style.display;
     this.show(vis);
-    if (vis) this.draw();
+    // Aspetta che il browser applichi il layout (display:flex) prima di misurare
+    // offsetWidth e ridisegnare la canvas a dimensioni corrette.
+    if (vis) requestAnimationFrame(() => this.draw());
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -108,27 +118,45 @@ class Oscilloscope {
     const cy = PAD.top + ph / 2;
     ctx.beginPath(); ctx.moveTo(PAD.left, cy); ctx.lineTo(PAD.left + pw, cy); ctx.stroke();
 
+    // ── Calcolo finestra temporale ───────────────────────────────────────────
+    const tWindow = this.tdiv * NDIV_X;
+    const tTrigger = this.times[this.trigOffset] ?? 0;
+    const tStart   = tTrigger + this._panOffsetMs;
+
     // ── Etichette asse X (tempo) ─────────────────────────────────────────────
     ctx.fillStyle  = '#8b949e';
     ctx.font       = '10px JetBrains Mono, monospace';
     ctx.textAlign  = 'center';
-    const totalMs  = this.tdiv * NDIV_X;
     for (let i = 0; i <= NDIV_X; i++) {
-      const x = PAD.left + (i / NDIV_X) * pw;
-      const t = (this.trigOffset / (this.times.length || 1)) * totalMs + (i / NDIV_X) * totalMs;
-      ctx.fillText(t.toFixed(1), x, H - PAD.bottom + 14);
+      const x  = PAD.left + (i / NDIV_X) * pw;
+      const tMs = tStart + (i / NDIV_X) * tWindow;
+      ctx.fillText(tMs.toFixed(2), x, H - PAD.bottom + 14);
     }
     ctx.fillText('ms', PAD.left + pw + 18, H - PAD.bottom + 14);
 
     // ── Etichette asse Y (primo canale attivo) ────────────────────────────────
-    const ch0 = this.channels.find(c => c.enabled && c.nodeId);
-    const vdiv0 = ch0 ? ch0.vdiv : 1.0;
-    const halfY = (NDIV_Y / 2) * vdiv0;
+    const ch0    = this.channels.find(c => c.enabled && c.nodeId);
+    const vdiv0  = ch0 ? ch0.vdiv : 1.0;
+    const halfY  = (NDIV_Y / 2) * vdiv0;
     ctx.textAlign = 'right';
     for (let i = 0; i <= NDIV_Y; i++) {
       const y  = PAD.top + (i / NDIV_Y) * ph;
       const vv = halfY - (i / NDIV_Y) * 2 * halfY;
       ctx.fillText(vv.toFixed(2), PAD.left - 4, y + 4);
+    }
+
+    // ── Hint zoom/pan (mostra solo quando non ci sono tracce o c'è pan) ──────
+    if (this._panOffsetMs !== 0 || this.tdiv !== (Oscilloscope.TDIV_STEPS[3] ?? 1)) {
+      ctx.fillStyle = '#484f58';
+      ctx.font      = '9px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`zoom ${this.tdiv} ms/div  offset ${this._panOffsetMs.toFixed(2)} ms  [rotella=zoom  drag-dx=pan  dbl-click=reset]`,
+                   PAD.left + 2, PAD.top - 4);
+    } else {
+      ctx.fillStyle = '#484f58';
+      ctx.font      = '9px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('rotella = zoom  |  drag tasto-dx = pan  |  dbl-click = reset', PAD.left + 2, PAD.top - 4);
     }
 
     // ── Tracce ────────────────────────────────────────────────────────────────
@@ -148,12 +176,16 @@ class Oscilloscope {
         ctx.lineWidth   = 1.5;
         ctx.beginPath();
 
-        const tTotal  = this.times[this.times.length - 1] - this.times[0];
-        const tWindow = this.tdiv * NDIV_X;
+        // Trova l'indice di campionamento corrispondente a tStart
+        let startIdx = 0;
+        for (let i = 0; i < this.times.length; i++) {
+          if (this.times[i] >= tStart) { startIdx = i; break; }
+          startIdx = i;
+        }
 
         let first = true;
-        for (let i = this.trigOffset; i < trace.length; i++) {
-          const tRel = this.times[i] - (this.times[this.trigOffset] ?? 0);
+        for (let i = startIdx; i < trace.length; i++) {
+          const tRel = this.times[i] - tStart;
           if (tRel > tWindow) break;
           const xPx = PAD.left + (tRel / tWindow) * pw;
           const v   = trace[i] + ch.offset;
@@ -173,10 +205,10 @@ class Oscilloscope {
     }
 
     // ── Cursori di misura ─────────────────────────────────────────────────────
-    this._drawCursors(ctx, PAD, pw, ph);
+    this._drawCursors(ctx, PAD, pw, ph, tStart, tWindow);
   }
 
-  _drawCursors(ctx, PAD, pw, ph) {
+  _drawCursors(ctx, PAD, pw, ph, tStart, tWindow) {
     const colors = ['#f0e040', '#40e0f0'];
     this._cursors.forEach((cx, i) => {
       if (cx === null) return;
@@ -189,19 +221,18 @@ class Oscilloscope {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // etichetta tempo
-      const tWindow = this.tdiv * 10;
-      const tMs     = (cx / pw) * tWindow;
+      const tMs = tStart + (cx / pw) * tWindow;
       ctx.fillStyle  = colors[i];
       ctx.font       = '9px JetBrains Mono, monospace';
       ctx.textAlign  = cx > pw * 0.7 ? 'right' : 'left';
-      ctx.fillText(`C${i + 1}: ${tMs.toFixed(2)} ms`, PAD.left + cx + (i === 0 ? 3 : -3), PAD.top + 14 + i * 12);
+      ctx.fillText(`C${i + 1}: ${tMs.toFixed(3)} ms`, PAD.left + cx + (i === 0 ? 3 : -3), PAD.top + 14 + i * 12);
     });
 
     // Δt tra i due cursori
     if (this._cursors[0] !== null && this._cursors[1] !== null) {
-      const tWindow = this.tdiv * 10;
-      const dt = Math.abs(this._cursors[1] - this._cursors[0]) / pw * tWindow;
+      const t1 = tStart + (this._cursors[0] / pw) * tWindow;
+      const t2 = tStart + (this._cursors[1] / pw) * tWindow;
+      const dt = Math.abs(t2 - t1);
       const fHz = dt > 0 ? (1000 / dt).toFixed(1) + ' Hz' : '—';
       ctx.fillStyle  = '#e6edf3';
       ctx.font       = 'bold 10px JetBrains Mono, monospace';
@@ -232,51 +263,105 @@ class Oscilloscope {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Interazione cursori (drag)
+  // Interazione: cursori, zoom (rotella), pan (drag tasto dx)
   // ─────────────────────────────────────────────────────────────────────────
 
   _setupCanvasEvents() {
     if (!this.canvas) return;
     const PAD_LEFT = 52;
 
+    // ── Zoom con rotella ─────────────────────────────────────────────────────
+    this.canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const steps  = Oscilloscope.TDIV_STEPS;
+      const idx    = steps.indexOf(this.tdiv);
+      let newIdx;
+      if (e.deltaY < 0) {
+        // zoom IN → tdiv più piccolo (più dettaglio)
+        newIdx = Math.max(0, idx === -1 ? 3 : idx - 1);
+      } else {
+        // zoom OUT → tdiv più grande (più contesto)
+        newIdx = Math.min(steps.length - 1, idx === -1 ? 3 : idx + 1);
+      }
+      this.tdiv = steps[newIdx];
+      // Aggiorna il select nel pannello di controllo
+      const sel = document.getElementById('scope-tdiv');
+      if (sel) sel.value = String(this.tdiv);
+      this.draw();
+    }, { passive: false });
+
+    // ── Mousedown: cursori (sx) o inizio pan (dx) ────────────────────────────
     this.canvas.addEventListener('mousedown', e => {
       const rect = this.canvas.getBoundingClientRect();
       const x    = e.clientX - rect.left - PAD_LEFT;
-      // Verifica se stiamo cliccando vicino a un cursore esistente
+
+      if (e.button === 2) {
+        // Tasto destro → avvia pan
+        this._panDragging = true;
+        this._panStartX   = e.clientX;
+        this.canvas.style.cursor = 'ew-resize';
+        return;
+      }
+
+      // Tasto sinistro → cursori di misura
       for (let i = 0; i < 2; i++) {
         if (this._cursors[i] !== null && Math.abs(x - this._cursors[i]) < 8) {
           this._dragging = i;
           return;
         }
       }
-      // Posiziona il prossimo cursore libero
       const free = this._cursors.findIndex(c => c === null);
+      const pw   = this.canvas.width - PAD_LEFT - 12;
       if (free !== -1) {
-        this._cursors[free] = Math.max(0, x);
-        this.draw();
+        this._cursors[free] = Math.max(0, Math.min(pw, x));
       } else {
-        // Se entrambi occupati, il click sinistro sposta C1, destro C2
-        const idx = e.button === 2 ? 1 : 0;
-        this._cursors[idx] = Math.max(0, x);
+        this._cursors[0] = Math.max(0, Math.min(pw, x));
+      }
+      this.draw();
+    });
+
+    // ── Mousemove: cursore o pan ─────────────────────────────────────────────
+    this.canvas.addEventListener('mousemove', e => {
+      const pw = this.canvas.width - PAD_LEFT - 12;
+
+      if (this._panDragging) {
+        const dx    = e.clientX - this._panStartX;
+        this._panStartX = e.clientX;
+        const tWindow   = this.tdiv * 10;
+        // dx > 0 → spostamento a destra → pan verso il passato (offset negativo)
+        const dtMs = -(dx / pw) * tWindow;
+        const maxPan = this.times.length > 0 ? this.times[this.times.length - 1] : 0;
+        this._panOffsetMs = Math.max(
+          -(this.times[this.trigOffset] ?? 0),
+          Math.min(maxPan, this._panOffsetMs + dtMs)
+        );
+        this.draw();
+        return;
+      }
+
+      if (this._dragging !== null) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x    = e.clientX - rect.left - PAD_LEFT;
+        this._cursors[this._dragging] = Math.max(0, Math.min(pw, x));
         this.draw();
       }
     });
 
-    this.canvas.addEventListener('mousemove', e => {
-      if (this._dragging === null) return;
-      const rect = this.canvas.getBoundingClientRect();
-      const x    = e.clientX - rect.left - PAD_LEFT;
-      const pw   = this.canvas.width - PAD_LEFT - 12;
-      this._cursors[this._dragging] = Math.max(0, Math.min(pw, x));
-      this.draw();
+    this.canvas.addEventListener('mouseup', () => {
+      this._dragging    = null;
+      this._panDragging = false;
+      this.canvas.style.cursor = 'crosshair';
+    });
+    this.canvas.addEventListener('mouseleave', () => {
+      this._dragging    = null;
+      this._panDragging = false;
+      this.canvas.style.cursor = 'crosshair';
     });
 
-    this.canvas.addEventListener('mouseup',   () => { this._dragging = null; });
-    this.canvas.addEventListener('mouseleave',() => { this._dragging = null; });
-
-    // Doppio click per rimuovere cursori
+    // ── Doppio click: reset pan + cursori ────────────────────────────────────
     this.canvas.addEventListener('dblclick', () => {
-      this._cursors = [null, null];
+      this._cursors     = [null, null];
+      this._panOffsetMs = 0;
       this.draw();
     });
 

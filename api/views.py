@@ -46,6 +46,7 @@ class SimulateView(View):
                     "voltages":     result.get("voltages", []),
                     "vin":          result.get("vin", []),
                     "vout":         result.get("vout", []),
+                    "node_traces":  result.get("node_traces", {}),
                 },
                 "metrics": result.get("metrics", {}),
                 "solver_info": {

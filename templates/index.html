@@ -180,6 +180,14 @@
       </svg>
       Scope
     </button>
+    <button class="tool-btn" id="btn-toggle-vt" title="Mostra / nascondi grafico V(t) classico">
+      <svg width="14" height="14" viewBox="0 0 14 14">
+        <polyline points="1,11 4,5 7,9 10,3 13,7" stroke="currentColor" stroke-width="1.4" fill="none"/>
+        <line x1="1" y1="13" x2="13" y2="13" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="1" y1="1"  x2="1"  y2="13" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      V(t)
+    </button>
     <button class="tool-btn stop-anim" id="btn-pause-anim" style="display:none" title="Pausa / Riprendi animazione">
       <svg id="pause-icon" width="14" height="14" viewBox="0 0 14 14">
         <rect x="2" y="2" width="3.5" height="10" rx="1" fill="currentColor"/>
@@ -357,9 +365,9 @@
 </div><!-- /.main-top -->
 
 <!-- ── BOTTOM PANEL: V(t) + V(f) sempre visibili ── -->
-<div class="bottom-panel">
+<div class="bottom-panel" id="bottom-panel">
 
-  <div class="bottom-chart-area">
+  <div class="bottom-chart-area" id="vt-panel" style="display:none">
     <div class="bottom-chart-header">
       <span class="bottom-chart-title" id="vt-title">V(t)</span>
       <span class="bottom-badge probe-node-badge" id="badge-probe" style="display:none"></span>
@@ -436,6 +444,7 @@
         Click = cursore &nbsp;|&nbsp; Doppio-click = rimuovi cursori
       </span>
     </div>
+    <button class="tool-btn" id="btn-scope-auto" title="Auto-scala V/div su tutti i canali" style="padding:3px 10px;font-size:11px">Auto</button>
     <button class="tool-btn" id="btn-scope-close" style="margin-left:auto;padding:3px 10px">✕</button>
   </div>
   <canvas id="scope-canvas" class="scope-canvas"></canvas>

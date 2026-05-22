@@ -42,6 +42,24 @@ let _scopeNodeTraces = {};   // ultime tracce disponibili (aggiornate dopo ogni 
 
 document.getElementById('btn-oscilloscope').addEventListener('click', () => scope.toggle());
 document.getElementById('btn-scope-close') .addEventListener('click', () => scope.show(false));
+document.getElementById('btn-scope-auto')  .addEventListener('click', () => {
+  _scopeAutoScale();
+  scope.draw();
+});
+
+// Toggle grafico V(t): permette di nasconderlo quando si usa solo lo scope
+const _vtPanel   = document.getElementById('vt-panel');
+const _btnTogVt  = document.getElementById('btn-toggle-vt');
+let   _vtVisible = false;   // nascosto di default: lo scope è il viewer principale
+// Stato iniziale pulsante: V(t) nascosto
+_btnTogVt.style.opacity = '0.4';
+_btnTogVt.title = 'Mostra grafico V(t)';
+_btnTogVt.addEventListener('click', () => {
+  _vtVisible = !_vtVisible;
+  _vtPanel.style.display  = _vtVisible ? '' : 'none';
+  _btnTogVt.style.opacity = _vtVisible ? '1' : '0.4';
+  _btnTogVt.title         = _vtVisible ? 'Nascondi grafico V(t)' : 'Mostra grafico V(t)';
+});
 
 // Canali CH1–CH4: sync dropdown e vdiv
 [1, 2, 3, 4].forEach(ch => {
@@ -61,6 +79,30 @@ document.getElementById('scope-tdiv').addEventListener('change', e => {
   scope.tdiv = parseFloat(e.target.value) || 1.0;
   scope.draw();
 });
+
+/**
+ * Auto-scala V/div per ogni canale attivo in base all'ampiezza del segnale.
+ * Usa il valore "nice" più piccolo che sia >= ampiezza/3.5 (con margine 12.5%)
+ * in modo che il segnale non tocchi mai i bordi del display.
+ */
+const _NICE_VDIV = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50];
+function _scopeAutoScale() {
+  scope.channels.forEach((ch, ci) => {
+    if (!ch.nodeId) return;
+    const trace = _scopeNodeTraces[ch.nodeId];
+    if (!trace || trace.length === 0) return;
+    const maxAbs = Math.max(...trace.map(v => Math.abs(v)));
+    if (maxAbs === 0) return;
+    // Il display ha 8 divisioni (±4 dal centro).
+    // Vogliamo che l'ampiezza occupi al massimo 3.5 divisioni (margine 12.5%).
+    const minVdiv = maxAbs / 3.5;
+    // Ceiling: primo valore >= minVdiv
+    const best = _NICE_VDIV.find(v => v >= minVdiv) ?? _NICE_VDIV[_NICE_VDIV.length - 1];
+    scope.channels[ci].vdiv = best;
+    const vdivEl = document.getElementById(`scope-ch${ci + 1}-vdiv`);
+    if (vdivEl) vdivEl.value = String(best);
+  });
+}
 
 /** Popola i dropdown dei canali con i nodi disponibili. */
 function _updateScopeNodeSelectors(nodeNames) {
@@ -845,20 +887,31 @@ function handleSimResult(data) {
     _scopeNodeTraces = r.node_traces;
     const nodeNames  = Object.keys(r.node_traces);
     _updateScopeNodeSelectors(nodeNames);
-    // Auto-assegna CH1 al primo nodo non ancora assegnato
-    if (!scope.channels[0].nodeId && nodeNames.length > 0) {
+
+    // Auto-assegna CH1 al primo nodo (sempre: aggiorna ad ogni simulazione)
+    if (nodeNames.length > 0) {
       scope.channels[0].nodeId  = nodeNames[0];
       scope.channels[0].enabled = true;
       const sel = document.getElementById('scope-ch1-node');
       if (sel) sel.value = nodeNames[0];
     }
-    // Adatta tdiv automaticamente: circa 2 periodi visibili per default
+    // Auto-assegna CH2 al secondo nodo se presente
+    if (nodeNames.length > 1) {
+      scope.channels[1].nodeId  = nodeNames[1];
+      scope.channels[1].enabled = true;
+      const sel2 = document.getElementById('scope-ch2-node');
+      if (sel2) sel2.value = nodeNames[1];
+    }
+
+    // Auto-scala V/div su tutti i canali attivi
+    _scopeAutoScale();
+
+    // Adatta tdiv automaticamente: circa 1 schermo = intera finestra simulata
     const totalMs = r.times[r.times.length - 1];
     const autoTdiv = totalMs / 10;
     scope.tdiv = autoTdiv > 0 ? autoTdiv : 1.0;
     const tdivSel = document.getElementById('scope-tdiv');
     if (tdivSel) {
-      // Seleziona il valore più vicino
       const opts = Array.from(tdivSel.options).map(o => parseFloat(o.value));
       const best = opts.reduce((a, b) => Math.abs(b - scope.tdiv) < Math.abs(a - scope.tdiv) ? b : a);
       tdivSel.value = String(best);
