@@ -1,7 +1,7 @@
 # CircuitSim — Documentazione Tecnica
 
 > **Destinatari:** sviluppatori, collaboratori umani e agenti AI che partecipano al progetto.  
-> **Versione:** 1.1 — Maggio 2026 (aggiornata dopo Sprint 1)
+> **Versione:** 1.0 — Maggio 2026
 
 ---
 
@@ -61,7 +61,15 @@ circuitsim/
 │       ├── circuit-canvas.js   # Editor schematico interattivo
 │       ├── bode-plot.js        # Wrapper Chart.js per Bode plot
 │       ├── current-animator.js # Animazione flusso di corrente
-│       └── oscilloscope.js     # Oscilloscopio multi-canale (Sprint 1)
+│       ├── oscilloscope.js     # Oscilloscopio multi-canale (Sprint 1)
+│       ├── settings.js         # Temi e preferenze utente (localStorage)
+│       ├── chart-theme.js      # Colori assi Chart.js da CSS
+│       ├── comp-help.js        # Popup parametri componenti + guida hover
+│       ├── app-help.js         # Help on line (modale manuale)
+│       ├── sim-analyst.js      # Osservazioni post-simulazione
+│       ├── param-analyzer.js   # Analisi parametrica topologia
+│       ├── calculator.js       # Calcolatrice / formule
+│       └── tools.js            # Conv. C, filtri, frequenzimetro
 ├── templates/
 │   └── index.html        # SPA entry point
 ├── doc/                  # Documentazione (questa cartella)

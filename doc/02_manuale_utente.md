@@ -1,7 +1,7 @@
 # CircuitSim — Manuale Utente
 
 > **Per chi è questo manuale:** chiunque voglia usare CircuitSim per disegnare e simulare circuiti elettronici, senza necessità di conoscere la parte tecnica interna.  
-> **Versione:** 1.1 — Maggio 2026 (aggiornata dopo Sprint 1)
+> **Versione:** 1.0 — Maggio 2026
 
 ---
 
@@ -18,6 +18,10 @@ CircuitSim è un simulatore di circuiti elettronici che funziona direttamente ne
 - **Analizzare segnali** con l'oscilloscopio virtuale multi-canale
 
 Non serve installare nulla: basta aprire il browser all'indirizzo fornito dall'amministratore (di solito `http://localhost:8000`).
+
+### Help on line nell'applicazione
+
+Accanto al nome **CircuitSim** (in alto a sinistra) trovi il pulsante **?**. Apre un manuale integrato con sezioni navigabili (avvio rapido, selezione, simulazione, strumenti, scorciatoie). Per il testo completo in Markdown vedi anche `doc/02_manuale_utente.md` nel repository.
 
 ---
 
@@ -52,7 +56,8 @@ Nella barra in alto trovi i pulsanti degli strumenti:
 
 | Pulsante | Tasto | Cosa fa |
 |---|---|---|
-| **Seleziona** | `S` | Seleziona e sposta componenti |
+| **Seleziona** | `S` | Seleziona e sposta componenti; trascina un rettangolo su area vuota per selezione multipla |
+| **Help ?** | — | Apre il manuale *Help on line* nell'header |
 | **Filo** | `W` | Collega terminali con un filo |
 | **Elimina** | `D` | Cancella componenti, fili o etichette |
 | **R** | `R` | Posiziona una resistenza |
@@ -91,6 +96,19 @@ Nella barra in alto trovi i pulsanti degli strumenti:
 2. Clicca sul componente — diventa evidenziato
 3. Tieni premuto e trascina nella nuova posizione
 
+### 2.4b Selezione multipla
+
+Con lo strumento **Seleziona**:
+
+1. **Trascina** il mouse su un'area vuota del circuito: compare un rettangolo blu; al rilascio si selezionano tutti i componenti nell'area.
+2. **Shift + trascina** per aggiungere alla selezione senza deselezionare gli altri.
+3. **Shift + click** su un componente per aggiungerlo o rimuoverlo dal gruppo.
+4. **Trascina** un componente del gruppo: si spostano tutti i selezionati insieme.
+5. **Del** / **Backspace** o strumento **Elimina**: cancella tutti i componenti selezionati (con conferma se attiva in Impostazioni).
+6. Click su area vuota (senza trascinare) deseleziona tutto.
+
+Nel pannello **Componente selezionato** compare un riepilogo quando sono selezionati più elementi.
+
 ### 2.5 Ruotare un Componente
 
 1. Seleziona il componente
@@ -100,7 +118,8 @@ Nella barra in alto trovi i pulsanti degli strumenti:
 ### 2.6 Eliminare un Componente o Filo
 
 - Seleziona lo strumento **Elimina** poi clicca sull'elemento
-- Oppure seleziona il componente (con **Seleziona**) e premi `Canc` o `Backspace`
+- Oppure seleziona uno o più componenti (con **Seleziona**) e premi `Canc` o `Backspace`
+- Con più componenti selezionati, l'eliminazione riguarda l'intero gruppo e i fili collegati
 
 ### 2.7 Caricare il Circuito di Esempio
 
@@ -303,7 +322,27 @@ L'oscilloscopio si sincronizza automaticamente sul **fronte di salita** del CH1 
 
 ---
 
-## 10. Scorciatoie da Tastiera — Riepilogo
+## 10. Impostazioni e temi
+
+Nella sidebar sinistra, sezione **Impostazioni** (in fondo):
+
+| Opzione | Descrizione |
+|---|---|
+| **Tema** | Notte, Ardesia, Oceano, Chiaro |
+| **Dimensione testo** | Compatta / Normale / Grande |
+| **Griglia canvas** | Mostra o nasconde i punti griglia |
+| **Snap alla griglia** | Aggancia posizione componenti |
+| **Etichette componenti** | Nome e valore sullo schema |
+| **Conferma eliminazione** | Dialogo prima di cancellare |
+| **Analisi predefinita** | AC, Gradino o Sinusoide all'avvio |
+| **Animazione corrente** | Pallini dopo Simula |
+| **Pannelli all'avvio** | Grafici destra e assistente |
+
+**Ripristina predefiniti** riporta tutte le opzioni ai valori iniziali.
+
+---
+
+## 11. Scorciatoie da Tastiera — Riepilogo
 
 | Tasto | Azione |
 |---|---|
@@ -318,13 +357,15 @@ L'oscilloscopio si sincronizza automaticamente sul **fronte di salita** del CH1 
 | `T` | Strumento Testo |
 | `E` | Ruota componente selezionato |
 | `L` | Posiziona Induttore |
-| `Canc` / `Backspace` | Elimina elemento selezionato |
+| `Canc` / `Backspace` | Elimina selezione (anche multipla) |
+| `Shift` + click / trascina | Aggiungi o togli dalla selezione multipla |
+| `Esc` | Deseleziona / annulla |
 | Rotella mouse | Zoom canvas |
 | Spazio + trascina | Pan canvas |
 
 ---
 
-## 11. Domande Frequenti
+## 12. Domande Frequenti
 
 **Il circuito non produce risultati dopo "Simula".**  
 Verifica che: ogni componente abbia almeno un terminale collegato, ci sia almeno una massa (GND) nel circuito, e ci sia almeno un generatore di tensione.

@@ -35,6 +35,151 @@ const bode      = new BodePlot('chart-magnitude', 'chart-phase');
 const transient = new TransientPlot('chart-transient');
 const animator  = new CurrentAnimator(canvas);
 
+// ─── Layout: nascondi pannelli / modalità disegno ────────────────────────────
+
+const _layout = { focus: false, right: true, analyst: true };
+
+function _loadLayoutPrefs() {
+  try {
+    const raw = localStorage.getItem('circuitsim-layout');
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (typeof s.focus === 'boolean')   _layout.focus   = s.focus;
+      if (typeof s.right === 'boolean')   _layout.right   = s.right;
+      if (typeof s.analyst === 'boolean') _layout.analyst = s.analyst;
+      return;
+    }
+  } catch (_) { /* ignore */ }
+  const defs = window.circuitSimSettings?.getLayoutDefaults?.();
+  if (defs) {
+    if (typeof defs.right === 'boolean')   _layout.right   = defs.right;
+    if (typeof defs.analyst === 'boolean') _layout.analyst = defs.analyst;
+  }
+}
+
+function _refreshChartsTheme() {
+  window.syncChartThemeFromCss?.();
+  window.applyChartTheme?.(vfChart);
+  window.applyChartTheme?.(vtChart);
+  window.applyChartTheme?.(_expandChart);
+  bode?.refreshTheme?.();
+  transient?.refreshTheme?.();
+}
+
+function _saveLayoutPrefs() {
+  try {
+    localStorage.setItem('circuitsim-layout', JSON.stringify(_layout));
+  } catch (_) { /* ignore */ }
+}
+
+function _closePanelsForFocus() {
+  const bp = document.getElementById('bottom-panel');
+  const be = document.getElementById('bode-expand-panel');
+  const sp = document.getElementById('oscilloscope-panel');
+  if (bp) bp.style.display = 'none';
+  if (be) be.style.display = 'none';
+  if (sp) sp.style.display = 'none';
+  if (typeof _expandChart !== 'undefined' && _expandChart) {
+    _expandChart.destroy();
+    _expandChart = null;
+  }
+}
+
+function _applyLayout() {
+  const hideRight   = !_layout.right   || _layout.focus;
+  const hideAnalyst = !_layout.analyst || _layout.focus;
+  document.body.classList.toggle('layout-focus', _layout.focus);
+  document.body.classList.toggle('hide-panel-right', hideRight);
+  document.body.classList.toggle('hide-panel-analyst', hideAnalyst);
+
+  if (_layout.focus) _closePanelsForFocus();
+
+  const ft = document.getElementById('focus-toolbar');
+  if (ft) ft.setAttribute('aria-hidden', _layout.focus ? 'false' : 'true');
+
+  const btnFocus   = document.getElementById('btn-layout-focus');
+  const btnRight   = document.getElementById('btn-toggle-right');
+  const btnAnalyst = document.getElementById('btn-toggle-analyst');
+  btnFocus?.classList.toggle('layout-active', _layout.focus);
+  btnRight?.classList.toggle('panel-off', hideRight);
+  btnAnalyst?.classList.toggle('panel-off', hideAnalyst);
+  if (btnFocus)   btnFocus.title   = _layout.focus ? 'Esci — ripristina tutti i pannelli' : 'Massimo spazio: solo canvas + componenti';
+  if (btnRight)   btnRight.title   = hideRight ? 'Mostra grafici (destra)' : 'Nascondi grafici (destra)';
+  if (btnAnalyst) btnAnalyst.title = hideAnalyst ? 'Mostra assistente' : 'Nascondi assistente';
+}
+
+function _setLayoutFocus(on) {
+  _layout.focus = on;
+  if (on) { _layout.right = false; _layout.analyst = false; }
+  _saveLayoutPrefs();
+  _applyLayout();
+}
+
+function _initSidebarCollapsibles() {
+  document.querySelectorAll('.sidebar-collapsible .sidebar-sec-toggle').forEach(title => {
+    const sec = title.closest('.sidebar-collapsible');
+    if (!sec) return;
+    title.addEventListener('click', () => sec.classList.toggle('collapsed'));
+  });
+}
+
+function _initLayoutControls() {
+  _loadLayoutPrefs();
+  _initSidebarCollapsibles();
+  _applyLayout();
+
+  document.getElementById('btn-layout-focus')?.addEventListener('click', () => {
+    _setLayoutFocus(!_layout.focus);
+  });
+
+  document.getElementById('focus-exit')?.addEventListener('click', () => _setLayoutFocus(false));
+  document.getElementById('focus-simulate')?.addEventListener('click', () => {
+    document.getElementById('btn-simulate')?.click();
+  });
+  document.getElementById('focus-nodes')?.addEventListener('click', () => {
+    document.getElementById('btn-show-nodes')?.click();
+  });
+  document.querySelectorAll('#focus-toolbar [data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => _activateTool(btn.dataset.tool, btn));
+  });
+
+  document.getElementById('btn-toggle-right')?.addEventListener('click', () => {
+    if (_layout.focus) _layout.focus = false;
+    _layout.right = !_layout.right;
+    _saveLayoutPrefs();
+    _applyLayout();
+  });
+
+  document.getElementById('btn-toggle-analyst')?.addEventListener('click', () => {
+    if (_layout.focus) _layout.focus = false;
+    _layout.analyst = !_layout.analyst;
+    _saveLayoutPrefs();
+    _applyLayout();
+  });
+
+  document.getElementById('rail-right')?.addEventListener('click', () => {
+    _layout.focus = false;
+    _layout.right = true;
+    _saveLayoutPrefs();
+    _applyLayout();
+  });
+
+  document.getElementById('rail-analyst')?.addEventListener('click', () => {
+    _layout.focus = false;
+    _layout.analyst = true;
+    _saveLayoutPrefs();
+    _applyLayout();
+  });
+
+  document.getElementById('rail-left-extra')?.addEventListener('click', () => {
+    _layout.focus = false;
+    _saveLayoutPrefs();
+    _applyLayout();
+    document.getElementById('sec-analisi')?.classList.remove('collapsed');
+    document.getElementById('sec-param-rapidi')?.classList.remove('collapsed');
+  });
+}
+
 // ─── Pannelli collassabili sidebar destro ────────────────────────────────────
 
 function _makeSidebarToggle(toggleId, bodyId, chevronId) {
@@ -73,6 +218,7 @@ function _openExpandedBode(mode) {   // mode = 'mag' | 'phase'
   const yData   = mode === 'mag' ? magnitude_db : phase_deg;
   const yLabel  = mode === 'mag' ? 'Ampiezza (dB)' : 'Fase (°)';
   const color   = mode === 'mag' ? '#3fb950' : '#58a6ff';
+  const T = window.CHART_THEME || { tick: '#e6edf3', axisTitle: '#f4f6f8', legend: '#d8dee4', grid: '#2d3a52', border: '#484f58', font: 'JetBrains Mono, monospace', tickSize: 10, titleSize: 11 };
 
   // Resetta dimensioni esplicite dal render precedente
   canvas.removeAttribute('width');
@@ -97,19 +243,21 @@ function _openExpandedBode(mode) {   // mode = 'mag' | 'phase'
       scales: {
         x: {
           type: 'logarithmic',
-          title: { display: true, text: 'Frequenza (Hz)', color: '#8b949e', font: { size: 11 } },
-          ticks: { color: '#8b949e', font: { size: 10 },
+          title: { display: true, text: 'Frequenza (Hz)', color: T.axisTitle, font: { size: T.titleSize, family: T.font } },
+          ticks: { color: T.tick, font: { size: T.tickSize, family: T.font },
             callback: v => v >= 1000 ? (v / 1000) + 'k' : v },
-          grid: { color: '#21262d' },
+          grid: { color: T.grid },
+          border: { color: T.border },
         },
         y: {
-          title: { display: true, text: yLabel, color: '#8b949e', font: { size: 11 } },
-          ticks: { color: '#c9d1d9', font: { size: 11 } },
-          grid: { color: '#21262d' },
+          title: { display: true, text: yLabel, color: T.axisTitle, font: { size: T.titleSize, family: T.font } },
+          ticks: { color: T.tick, font: { size: T.tickSize, family: T.font } },
+          grid: { color: T.grid },
+          border: { color: T.border },
         }
       },
       plugins: {
-        legend: { labels: { color: '#c9d1d9', font: { size: 11 } } },
+        legend: { labels: { color: T.legend, font: { size: 11, family: T.font } } },
         zoom: {
           zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
           pan:  { enabled: true, mode: 'x' },
@@ -341,6 +489,7 @@ let vtChart = null;
 let vfChart = null;
 
 function bottomOpts(xOpts, yOpts) {
+  const T = window.CHART_THEME || { tick: '#e6edf3', axisTitle: '#f4f6f8', legend: '#d8dee4', grid: '#2d3a52', border: '#484f58', font: 'JetBrains Mono, monospace', tickSize: 10, titleSize: 11 };
   const base = {
     responsive: true,
     maintainAspectRatio: false,
@@ -349,8 +498,8 @@ function bottomOpts(xOpts, yOpts) {
     plugins: {
       legend: {
         display: true, position: 'bottom',
-        labels: { color: '#c9d1d9', boxWidth: 10, padding: 6,
-                  font: { size: 9, family: 'JetBrains Mono, monospace' } },
+        labels: { color: T.legend, boxWidth: 10, padding: 6,
+                  font: { size: 10, family: T.font } },
       },
       tooltip: {
         backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1,
@@ -375,15 +524,15 @@ function bottomOpts(xOpts, yOpts) {
       },
     },
     scales: {
-      x: { grid: { color: '#1e274088' },
-           border: { color: '#30363d' },
-           ticks: { color: '#c9d1d9', maxTicksLimit: 7,
-                    font: { size: 10, family: 'JetBrains Mono, monospace' } },
+      x: { grid: { color: T.gridFaint || T.grid },
+           border: { color: T.border },
+           ticks: { color: T.tick, maxTicksLimit: 7,
+                    font: { size: T.tickSize, family: T.font } },
            ...xOpts },
-      y: { grid: { color: '#1e274088' },
-           border: { color: '#30363d' },
-           ticks: { color: '#c9d1d9', maxTicksLimit: 6,
-                    font: { size: 10, family: 'JetBrains Mono, monospace' } },
+      y: { grid: { color: T.gridFaint || T.grid },
+           border: { color: T.border },
+           ticks: { color: T.tick, maxTicksLimit: 6,
+                    font: { size: T.tickSize, family: T.font } },
            ...yOpts },
     },
   };
@@ -395,8 +544,8 @@ function initBottomCharts() {
     type: 'scatter',
     data: { datasets: [] },
     options: bottomOpts(
-      { title: { display: true, text: 'Tempo (ms)', color: '#8b949e', font: { size: 9 } } },
-      { title: { display: true, text: 'V (volt)',   color: '#8b949e', font: { size: 9 } },
+      { title: { display: true, text: 'Tempo (ms)', color: T.axisTitle, font: { size: T.titleSize, family: T.font } } },
+      { title: { display: true, text: 'V (volt)',   color: T.axisTitle, font: { size: T.titleSize, family: T.font } },
         suggestedMin: -1.3, suggestedMax: 1.3 }
     ),
   });
@@ -406,12 +555,12 @@ function initBottomCharts() {
     data: { datasets: [] },
     options: bottomOpts(
       { type: 'logarithmic',
-        title: { display: true, text: 'Frequenza (Hz)', color: '#8b949e', font: { size: 9 } },
+        title: { display: true, text: 'Frequenza (Hz)', color: T.axisTitle, font: { size: T.titleSize, family: T.font } },
         min: 10, max: 100_000,
-        ticks: { color: '#c9d1d9', maxTicksLimit: 6,
-                 font: { size: 10, family: 'JetBrains Mono, monospace' },
+        ticks: { color: T.tick, maxTicksLimit: 6,
+                 font: { size: T.tickSize, family: T.font },
                  callback: v => ({ 10:'10',100:'100',1000:'1k',10000:'10k',100000:'100k' }[v] ?? '') } },
-      { title: { display: true, text: 'Ampiezza (dB)', color: '#8b949e', font: { size: 9 } },
+      { title: { display: true, text: 'Ampiezza (dB)', color: T.axisTitle, font: { size: T.titleSize, family: T.font } },
         suggestedMin: -60, suggestedMax: 5 }
     ),
   });
@@ -911,11 +1060,34 @@ document.getElementById('freq-stop').addEventListener('input',  scheduleAnalytic
 // ─── Component editor ─────────────────────────────────────────────────────────
 
 document.getElementById('circuit-canvas').addEventListener('circuit-select', e => {
-  renderCompEditor(e.detail.comp);
+  renderCompEditor(e.detail);
 });
 
-function renderCompEditor(comp) {
+function renderCompEditor(detail) {
   const container = document.getElementById('comp-editor');
+  const comp  = detail?.comp ?? detail;
+  const count = detail?.count ?? (detail?.comps?.length ?? (comp ? 1 : 0));
+
+  if (!comp && count === 0) {
+    container.innerHTML = '<div class="no-selection">Clicca un componente o trascina un rettangolo per selezionare più elementi</div>';
+    return;
+  }
+
+  if (count > 1) {
+    const types = {};
+    (detail.comps || []).forEach(c => { types[c.type] = (types[c.type] || 0) + 1; });
+    const summary = Object.entries(types)
+      .map(([t, n]) => `${n}× ${COMP_DEFS[t]?.label || t}`)
+      .join(', ');
+    container.innerHTML = `
+      <div class="comp-multi-select">
+        <div class="comp-id-badge">${count} componenti</div>
+        <p class="comp-multi-hint">${summary}</p>
+        <p class="comp-multi-hint">Trascina per spostare il gruppo · <kbd>Del</kbd> per eliminare · <kbd>Shift</kbd>+click per aggiungere/togliere</p>
+      </div>`;
+    return;
+  }
+
   if (!comp) {
     container.innerHTML = '<div class="no-selection">Clicca un componente per modificarlo</div>';
     return;
@@ -1121,8 +1293,9 @@ function handleSimResult(data) {
       }
     }
     updateMetrics(data.metrics);
-    // AC: anima corrente sinusoidale alla frequenza di taglio
-    _startAcAnimation(data.metrics);
+    if (window.circuitSimSettings?.shouldAutoCurrentAnim()) {
+      _startAcAnimation(data.metrics);
+    }
 
   } else if (type === 'transient') {
     document.getElementById('transient-section').style.display = '';
@@ -1134,14 +1307,16 @@ function handleSimResult(data) {
       setBadge('badge-vt', `MNA Tier ${data.tier_used}`, true);
     }
     updateMetrics(data.metrics);
-    // Anima corrente per risposta al gradino
-    _startTransientAnimation(r);
+    if (window.circuitSimSettings?.shouldAutoCurrentAnim()) {
+      _startTransientAnimation(r);
+    }
 
   } else if (type === 'sinusoidal') {
     document.getElementById('sine-metrics-section').style.display = '';
     _showSineResult(data);
-    // Anima corrente per segnale sinusoidale
-    _startSineAnimation(r, buildAnalysisOptions().frequency);
+    if (window.circuitSimSettings?.shouldAutoCurrentAnim()) {
+      _startSineAnimation(r, buildAnalysisOptions().frequency);
+    }
   }
 
   // ── Oscilloscopio: aggiorna tracce se disponibili ─────────────────────────
@@ -1385,7 +1560,13 @@ function setStatus(msg, type = '') {
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
 (function init() {
+  initCircuitSimSettings(canvas);
+  _initLayoutControls();
   initBottomCharts();
+  window.circuitSimSettings?.applyAll();
+  document.addEventListener('circuitsim-settings-changed', (e) => {
+    if (e.detail.key === 'theme' || e.detail.key === 'all') _refreshChartsTheme();
+  });
   updateSliderDisplays();
   canvas.loadExample();
   updateAnalyticalFromSliders();

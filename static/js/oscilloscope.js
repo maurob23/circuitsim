@@ -124,8 +124,8 @@ class Oscilloscope {
     const tStart   = tTrigger + this._panOffsetMs;
 
     // ── Etichette asse X (tempo) ─────────────────────────────────────────────
-    ctx.fillStyle  = '#8b949e';
-    ctx.font       = '10px JetBrains Mono, monospace';
+    ctx.fillStyle  = '#e6edf3';
+    ctx.font       = '11px JetBrains Mono, monospace';
     ctx.textAlign  = 'center';
     for (let i = 0; i <= NDIV_X; i++) {
       const x  = PAD.left + (i / NDIV_X) * pw;
@@ -147,21 +147,21 @@ class Oscilloscope {
 
     // ── Hint zoom/pan (mostra solo quando non ci sono tracce o c'è pan) ──────
     if (this._panOffsetMs !== 0 || this.tdiv !== (Oscilloscope.TDIV_STEPS[3] ?? 1)) {
-      ctx.fillStyle = '#484f58';
-      ctx.font      = '9px JetBrains Mono, monospace';
+      ctx.fillStyle = '#a8b0ba';
+      ctx.font      = '10px JetBrains Mono, monospace';
       ctx.textAlign = 'left';
       ctx.fillText(`zoom ${this.tdiv} ms/div  offset ${this._panOffsetMs.toFixed(2)} ms  [rotella=zoom  drag-dx=pan  dbl-click=reset]`,
                    PAD.left + 2, PAD.top - 4);
     } else {
-      ctx.fillStyle = '#484f58';
-      ctx.font      = '9px JetBrains Mono, monospace';
+      ctx.fillStyle = '#a8b0ba';
+      ctx.font      = '10px JetBrains Mono, monospace';
       ctx.textAlign = 'left';
       ctx.fillText('rotella = zoom  |  drag tasto-dx = pan  |  dbl-click = reset', PAD.left + 2, PAD.top - 4);
     }
 
     // ── Tracce ────────────────────────────────────────────────────────────────
     if (this.times.length < 2) {
-      ctx.fillStyle = '#484f58';
+      ctx.fillStyle = '#a8b0ba';
       ctx.font      = '13px JetBrains Mono, monospace';
       ctx.textAlign = 'center';
       ctx.fillText('Nessun dato — esegui una simulazione Sinusoide o Transitorio', W / 2, H / 2);

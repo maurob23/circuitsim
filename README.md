@@ -29,19 +29,25 @@ python manage.py runserver
 #    http://127.0.0.1:8000
 ```
 
+### Help on line
+
+Pulsante **?** nell'header (accanto a CircuitSim v1.0) — manuale integrato con navigazione per sezioni.
+
+Documentazione: [`doc/`](doc/) — manuale utente, architettura, help on line (`04_help_online.md`).
+
 ### Keyboard shortcuts (circuit editor)
 
 | Tasto | Azione |
 |---|---|
-| S | Strumento selezione |
+| S | Strumento selezione (anche selezione multipla con rettangolo) |
 | W | Disegna filo |
 | R | Posiziona resistenza |
 | C | Posiziona condensatore |
 | V | Posiziona generatore V |
 | G | Posiziona massa |
 | E | Ruota componente selezionato |
-| Del | Elimina componente selezionato |
-| Esc | Annulla azione corrente |
+| Del | Elimina selezione (singola o multipla) |
+| Esc | Deseleziona / annulla |
 
 ## API
 

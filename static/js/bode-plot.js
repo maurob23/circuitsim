@@ -16,6 +16,11 @@
 
 // ─── Dark-theme defaults for Chart.js ────────────────────────────────────────
 
+const _T = () => window.CHART_THEME || {
+  tick: '#e6edf3', axisTitle: '#f4f6f8', legend: '#d8dee4',
+  grid: '#2d3a52', font: 'JetBrains Mono, monospace', tickSize: 10, titleSize: 11,
+};
+
 const CHART_DEFAULTS = {
   responsive: true,
   maintainAspectRatio: false,
@@ -25,9 +30,9 @@ const CHART_DEFAULTS = {
       display: true,
       position: 'bottom',
       labels: {
-        color: '#8b949e',
+        color: _T().legend,
         boxWidth: 12,
-        font: { size: 10, family: 'JetBrains Mono, monospace' },
+        font: { size: 11, family: _T().font },
         padding: 8,
       },
     },
@@ -35,8 +40,8 @@ const CHART_DEFAULTS = {
       backgroundColor: '#161b22',
       borderColor: '#30363d',
       borderWidth: 1,
-      titleColor: '#e6edf3',
-      bodyColor: '#8b949e',
+      titleColor: '#f0f3f6',
+      bodyColor: '#c9d1d9',
       callbacks: {
         title: (items) => `${items[0].parsed.x.toFixed(1)} Hz`,
       },
@@ -47,11 +52,12 @@ const CHART_DEFAULTS = {
       type: 'logarithmic',
       min: 10,
       max: 100_000,
-      title: { display: true, text: 'Frequenza (Hz)', color: '#484f58', font: { size: 10 } },
-      grid: { color: '#1e2740' },
+      title: { display: true, text: 'Frequenza (Hz)', color: _T().axisTitle, font: { size: _T().titleSize, family: _T().font } },
+      grid: { color: _T().grid },
+      border: { color: _T().border },
       ticks: {
-        color: '#484f58',
-        font: { size: 9, family: 'JetBrains Mono, monospace' },
+        color: _T().tick,
+        font: { size: _T().tickSize, family: _T().font },
         maxTicksLimit: 6,
         callback: (v) => {
           const labels = { 10: '10', 100: '100', 1000: '1k', 10000: '10k', 100000: '100k' };
@@ -60,8 +66,9 @@ const CHART_DEFAULTS = {
       },
     },
     y: {
-      grid: { color: '#1e2740' },
-      ticks: { color: '#484f58', font: { size: 9, family: 'JetBrains Mono, monospace' }, maxTicksLimit: 6 },
+      grid: { color: _T().grid },
+      border: { color: _T().border },
+      ticks: { color: _T().tick, font: { size: _T().tickSize, family: _T().font }, maxTicksLimit: 6 },
     },
   },
 };
@@ -84,7 +91,7 @@ class BodePlot {
     this.chartMag   = this._createChart(magCanvasId, {
       scales: {
         y: {
-          title: { display: true, text: 'Ampiezza (dB)', color: '#484f58', font: { size: 10 } },
+          title: { display: true, text: 'Ampiezza (dB)', color: _T().axisTitle, font: { size: _T().titleSize, family: _T().font } },
           suggestedMin: -60,
           suggestedMax: 10,
         },
@@ -94,12 +101,19 @@ class BodePlot {
     this.chartPhase = this._createChart(phaseCanvasId, {
       scales: {
         y: {
-          title: { display: true, text: 'Fase (°)', color: '#484f58', font: { size: 10 } },
+          title: { display: true, text: 'Fase (°)', color: _T().axisTitle, font: { size: _T().titleSize, family: _T().font } },
           suggestedMin: -180,
           suggestedMax: 0,
         },
       },
     });
+  }
+
+  refreshTheme() {
+    if (typeof window.applyChartTheme !== 'function') return;
+    window.applyChartTheme(this.chartMag);
+    window.applyChartTheme(this.chartPhase);
+    if (this.chartTransient) window.applyChartTheme(this.chartTransient);
   }
 
   _createChart(canvasId, extraOpts = {}) {
@@ -249,33 +263,39 @@ class TransientPlot {
           legend: {
             display: true,
             position: 'bottom',
-            labels: { color: '#8b949e', boxWidth: 12, font: { size: 10 }, padding: 8 },
+            labels: { color: _T().legend, boxWidth: 12, font: { size: 11, family: _T().font }, padding: 8 },
           },
           tooltip: {
             backgroundColor: '#161b22',
             borderColor: '#30363d',
             borderWidth: 1,
-            titleColor: '#e6edf3',
-            bodyColor: '#8b949e',
+            titleColor: '#f0f3f6',
+            bodyColor: '#c9d1d9',
             callbacks: { title: (items) => `t = ${items[0].parsed.x.toFixed(3)} ms` },
           },
         },
         scales: {
           x: {
-            title: { display: true, text: 'Tempo (ms)', color: '#484f58', font: { size: 10 } },
-            grid: { color: '#1e2740' },
-            ticks: { color: '#484f58', font: { size: 9, family: 'JetBrains Mono, monospace' } },
+            title: { display: true, text: 'Tempo (ms)', color: _T().axisTitle, font: { size: _T().titleSize, family: _T().font } },
+            grid: { color: _T().grid },
+            border: { color: _T().border },
+            ticks: { color: _T().tick, font: { size: _T().tickSize, family: _T().font } },
           },
           y: {
-            title: { display: true, text: 'Tensione (V)', color: '#484f58', font: { size: 10 } },
-            grid: { color: '#1e2740' },
-            ticks: { color: '#484f58', font: { size: 9, family: 'JetBrains Mono, monospace' } },
+            title: { display: true, text: 'Tensione (V)', color: _T().axisTitle, font: { size: _T().titleSize, family: _T().font } },
+            grid: { color: _T().grid },
+            border: { color: _T().border },
+            ticks: { color: _T().tick, font: { size: _T().tickSize, family: _T().font } },
             suggestedMin: 0,
             suggestedMax: 1.2,
           },
         },
       },
     });
+  }
+
+  refreshTheme() {
+    window.applyChartTheme?.(this.chart);
   }
 
   update(result) {

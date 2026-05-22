@@ -136,7 +136,11 @@ const HOVER_HELP = {
   cap_converter:{ title: 'Conv. condensatori', text: 'Converte pF/nF/µF, trova valori E12 commerciali e calcola C da fc e R per scegliere il componente.' },
   filter_calc:{ title: 'Calcolo filtri', text: 'Calcola R, C, L, fc, τ e Q in base al tipo di filtro (passa-basso, passa-alto, passa-banda).' },
   freq_meter:{ title: 'Frequenzimetro', text: 'Misura f da periodo T, da conta-cicli o legge frequenza e fc dall\'ultima simulazione.' },
-  default:   { title: 'CircuitSim', text: 'Passa il mouse su componenti, grafici o pulsanti per una guida contestuale.' },
+  layout_focus:{ title: 'Massimo spazio', text: 'Nasconde header, grafici, assistente, strumenti e pannelli bassi. Restano solo canvas e palette componenti (Passivi, Attivi, Alimentatori).' },
+  panel_right:{ title: 'Pannello grafici', text: 'Mostra o nasconde Bode, metriche e risultati nella colonna destra.' },
+  panel_analyst:{ title: 'Assistente', text: 'Mostra o nasconde il pannello guida e osservazioni a destra.' },
+  app_help:  { title: 'Help on line', text: 'Apre il manuale integrato: avvio rapido, selezione multipla, simulazione, strumenti e scorciatoie.' },
+  default:   { title: 'CircuitSim', text: 'Passa il mouse su componenti, grafici o pulsanti per una guida contestuale. Clicca ? nell\'header per l\'help completo.' },
 };
 
 // ─── Popup modale parametri ──────────────────────────────────────────────────

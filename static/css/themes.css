@@ -1,0 +1,101 @@
+/* Temi colore — attivati con data-theme su <html> */
+
+/* Notte (default): token in :root di style.css */
+
+/* Ardesia — neutro, contrasto leggermente più alto */
+html[data-theme="slate"] {
+  --bg-app:       #181b1f;
+  --bg-panel:     #22262c;
+  --bg-input:     #2c3139;
+  --bg-canvas:    #252a32;
+  --border:       #3d444d;
+  --border-light: #2e343c;
+
+  --text-1: #f6f8fa;
+  --text-2: #dde3ea;
+  --text-3: #9aa3ad;
+
+  --chart-tick:  #eef1f4;
+  --chart-title: #f6f8fa;
+  --chart-grid:  #3a424d;
+
+  --accent: #79b8ff;
+  --simulate-bg: #2f6feb;
+  --simulate-hover: #539bf5;
+
+  --grid-dot: #3d4654;
+  --comp-stroke: #8ec5ff;
+}
+
+/* Oceano — sfondo blu profondo, accenti ciano */
+html[data-theme="ocean"] {
+  --bg-app:       #071018;
+  --bg-panel:     #0c1a2e;
+  --bg-input:     #122238;
+  --bg-canvas:    #0a1628;
+  --border:       #1e3a5f;
+  --border-light: #152a45;
+
+  --text-1: #e8f4fc;
+  --text-2: #b8d4e8;
+  --text-3: #7a9bb5;
+
+  --chart-tick:  #d4e8f7;
+  --chart-title: #e8f4fc;
+  --chart-grid:  #1a3352;
+
+  --blue:   #4fc3f7;
+  --green:  #4ade80;
+  --accent: #4fc3f7;
+  --simulate-bg: #0e639c;
+  --simulate-hover: #1177bb;
+
+  --grid-dot: #1a3352;
+  --comp-stroke: #67d4ff;
+  --wire-color: #4ade80;
+}
+
+/* Chiaro — laboratorio / stampa */
+html[data-theme="light"] {
+  --bg-app:       #e8eaed;
+  --bg-panel:     #ffffff;
+  --bg-input:     #f3f4f6;
+  --bg-canvas:    #f0f2f5;
+  --border:       #c5cdd6;
+  --border-light: #dde1e6;
+
+  --text-1: #1a1f24;
+  --text-2: #3d4654;
+  --text-3: #6b7280;
+
+  --chart-tick:  #374151;
+  --chart-title: #111827;
+  --chart-grid:  #d1d5db;
+
+  --blue:   #0969da;
+  --green:  #1a7f37;
+  --amber:  #9a6700;
+  --red:    #cf222e;
+  --accent: #0969da;
+  --simulate-bg: #0969da;
+  --simulate-hover: #0550ae;
+
+  --grid-dot: #c5cdd6;
+  --comp-stroke: #0550ae;
+  --wire-color: #1a7f37;
+  --sel-color:  #9a6700;
+  --term-idle:  #c5cdd6;
+  --term-hover: #1a7f37;
+}
+
+html[data-theme="light"] .app-header,
+html[data-theme="light"] .sidebar-left,
+html[data-theme="light"] .sidebar-right,
+html[data-theme="light"] #analyst-panel {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+html[data-theme="light"] #bode-expand-panel,
+html[data-theme="light"] #oscilloscope-panel {
+  background: var(--bg-panel);
+}

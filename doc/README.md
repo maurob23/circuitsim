@@ -28,12 +28,24 @@ Questa cartella contiene tutta la documentazione ufficiale del progetto CircuitS
 - Cos'è CircuitSim e a cosa serve
 - Come avviare l'applicazione
 - Come disegnare un circuito (componenti, fili, rotazione, spostamento)
+- Selezione multipla con rettangolo e eliminazione di gruppo
+- Palette componenti, impostazioni (temi), layout pannelli
 - Come modificare i valori dei componenti
 - Come simulare e leggere i grafici
 - Animazione della corrente e controlli
 - Nodi di misura e selezione del punto di sonda
 - Scorciatoie da tastiera
 - Domande frequenti
+
+---
+
+### 04 · Help on line (in-app)
+**File:** [`04_help_online.md`](04_help_online.md)  
+**Per chi:** utenti e sviluppatori che estendono il manuale integrato  
+**Contiene:**
+- Pulsante **?** nell'header e sezioni del modale
+- Riferimento ai file `app-help.js` e stili CSS
+- Relazione con help componenti e guida contestuale
 
 ---
 
@@ -68,8 +80,9 @@ Quando vengono aggiunte nuove funzionalità al progetto:
 
 | Documento | Versione | Ultimo aggiornamento |
 |---|---|---|
-| Architettura tecnica | 1.1 | Sprint 1 — Mag 2026 |
-| Manuale utente | 1.1 | Sprint 1 — Mag 2026 |
-| Proposte e miglioramenti | 1.1 | Sprint 1 — Mag 2026 |
+| Architettura tecnica | 1.0 | Mag 2026 — release 1.0 |
+| Manuale utente | 1.0 | Mag 2026 — release 1.0 |
+| Proposte e miglioramenti | 1.1 | Mag 2026 |
+| Help on line | 1.0 | Mag 2026 |
 
-*Documentazione aggiornata: Maggio 2026 — CircuitSim v1.1 (Sprint 1)*
+*Documentazione aggiornata: Maggio 2026 — CircuitSim v1.0*

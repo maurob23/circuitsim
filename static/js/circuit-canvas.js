@@ -170,6 +170,9 @@ class CircuitCanvas {
     this.el  = canvasEl;
     this.ctx = canvasEl.getContext('2d');
     this.GRID = 40;
+    this.showGrid = true;
+    this.snapToGrid = true;
+    this.showCompLabels = true;
 
     this.components = [];   // [{id, type, x, y, rotation, value}]
     this.wires      = [];   // [{from: {compId, termId}, to: {compId, termId}}]
@@ -177,8 +180,11 @@ class CircuitCanvas {
 
     this.tool        = 'select';
     this.wireState   = null;    // {compId, termId} — first terminal of wire being drawn
-    this.dragState   = null;    // {comp, ox, oy} — dragging a component
-    this.selected    = null;    // comp or null
+    this.dragState   = null;    // {comp, ox, oy, group?} — dragging component(s)
+    this.selected    = null;    // comp, text label, or null (primario)
+    this.selectedComps = [];    // selezione multipla componenti
+    this._marquee    = null;    // { x0, y0, x1, y1 } in coordinate mondo
+    this._marqueeScreen = null; // origine in px schermo (soglia click vs drag)
     this.mousePos    = {x: 0, y: 0};
     this.hovTerm     = null;    // {compId, termId, x, y}
 
@@ -261,17 +267,23 @@ class CircuitCanvas {
     this.components = [];
     this.wires      = [];
     this.texts      = [];
-    this.selected   = null;
+    this._clearSelection();
     this.wireState  = null;
     this.dragState  = null;
+    this._marquee   = null;
     this._nextId    = 1;
     this.render();
     this._emitChange();
   }
 
   rotateSelected() {
-    if (!this.selected) return;
-    this.selected.rotation = ((this.selected.rotation || 0) + 90) % 360;
+    const targets = this.selectedComps.length
+      ? this.selectedComps
+      : (this.selected && !this._isTextObject(this.selected) ? [this.selected] : []);
+    if (!targets.length) return;
+    for (const c of targets) {
+      c.rotation = ((c.rotation || 0) + 90) % 360;
+    }
     this.render();
     this._emitChange();
   }
@@ -298,7 +310,7 @@ class CircuitCanvas {
     this.wires      = data.wires       ?? [];
     this.texts      = data.texts       ?? [];
     this._nextId    = data.nextId      ?? (this.components.length + this.texts.length + 2);
-    this.selected   = null;
+    this._clearSelection();
     this.render();
     this._emitChange();
     return true;
@@ -377,15 +389,96 @@ class CircuitCanvas {
   }
 
   _hitTest(comp, cx, cy) {
+    const b = this._getCompBounds(comp);
+    return cx >= b.minX && cx <= b.maxX && cy >= b.minY && cy <= b.maxY;
+  }
+
+  _getCompBounds(comp) {
     const terms = this.getTerminals(comp);
     const xs = terms.map((t) => t.x);
     const ys = terms.map((t) => t.y);
     const margin = 20;
-    const minX = Math.min(...xs) - margin;
-    const maxX = Math.max(...xs) + margin;
-    const minY = Math.min(...ys) - margin;
-    const maxY = Math.max(...ys) + margin;
-    return cx >= minX && cx <= maxX && cy >= minY && cy <= maxY;
+    return {
+      minX: Math.min(...xs) - margin,
+      maxX: Math.max(...xs) + margin,
+      minY: Math.min(...ys) - margin,
+      maxY: Math.max(...ys) + margin,
+    };
+  }
+
+  _rectsIntersect(a, b) {
+    return !(a.maxX < b.minX || a.minX > b.maxX || a.maxY < b.minY || a.minY > b.maxY);
+  }
+
+  _isTextObject(obj) {
+    return obj && obj.text !== undefined && String(obj.id || '').startsWith('text_');
+  }
+
+  _isCompSelected(comp) {
+    return this.selectedComps.includes(comp);
+  }
+
+  _clearSelection() {
+    this.selected = null;
+    this.selectedComps = [];
+    this._emitSelect(null);
+  }
+
+  _setCompSelection(comps, primary = null) {
+    this.selectedComps = [...comps];
+    this.selected = primary ?? comps[0] ?? null;
+    if (comps.length > 1) {
+      this._setStatus(`${comps.length} componenti selezionati — trascina per spostare, Del per eliminare`);
+    }
+    this._emitSelect(this.selected);
+  }
+
+  _selectInMarquee(x0, y0, x1, y1, additive = false) {
+    const box = {
+      minX: Math.min(x0, x1), maxX: Math.max(x0, x1),
+      minY: Math.min(y0, y1), maxY: Math.max(y0, y1),
+    };
+    const hits = this.components.filter(c => this._rectsIntersect(box, this._getCompBounds(c)));
+    if (additive) {
+      const merged = [...this.selectedComps];
+      for (const c of hits) {
+        if (!merged.includes(c)) merged.push(c);
+      }
+      this._setCompSelection(merged, merged[merged.length - 1] ?? null);
+    } else {
+      this._setCompSelection(hits, hits[0] ?? null);
+    }
+    if (!hits.length && !additive) this._clearSelection();
+  }
+
+  _removeComps(comps) {
+    const ids = new Set(comps.map(c => c.id));
+    this.components = this.components.filter(c => !ids.has(c.id));
+    this.wires = this.wires.filter(
+      w => !ids.has(w.from.compId) && !ids.has(w.to.compId)
+    );
+    this._clearSelection();
+    this._emitChange();
+  }
+
+  _deleteSelection() {
+    if (this._isTextObject(this.selected)) {
+      if (!this._confirmDelete('Eliminare l\'etichetta di testo?')) return false;
+      this.texts = this.texts.filter(t => t !== this.selected);
+      this._clearSelection();
+      this._emitChange();
+      return true;
+    }
+    const comps = this.selectedComps.length
+      ? [...this.selectedComps]
+      : (this.selected && !this._isTextObject(this.selected) ? [this.selected] : []);
+    if (!comps.length) return false;
+    const msg = comps.length > 1
+      ? `Eliminare ${comps.length} componenti selezionati?`
+      : 'Eliminare il componente selezionato?';
+    if (!this._confirmDelete(msg)) return false;
+    this._removeComps(comps);
+    return true;
   }
 
   findWireNear(cx, cy, tol = 7) {
@@ -797,6 +890,15 @@ class CircuitCanvas {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
+  _snapCoord(v) {
+    return this.snapToGrid ? snapGrid(v, this.GRID) : v;
+  }
+
+  _themeColor(cssVar, fallback) {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
+    return v || fallback;
+  }
+
   /** Coordinate mondo (applica inverso zoom+pan). */
   _pos(e) {
     const { x: sx, y: sy } = this._posScreen(e);
@@ -816,8 +918,8 @@ class CircuitCanvas {
 
     if (e.button !== 0) return;
     const { x, y } = this._pos(e);
-    const gx = snapGrid(x, this.GRID);
-    const gy = snapGrid(y, this.GRID);
+    const gx = this._snapCoord(x);
+    const gy = this._snapCoord(y);
 
     // ── Controllo click su nodo overlay (ha priorità sugli altri tool) ────────
     if (this._nodeOverlay?.length && this.tool === 'select') {
@@ -840,10 +942,10 @@ class CircuitCanvas {
 
     switch (this.tool) {
       case 'select': {
-        // Controlla prima le etichette testo
         const txt = this.findTextAt(x, y);
         if (txt) {
-          this.selected  = txt;
+          this.selectedComps = [];
+          this.selected = txt;
           this.dragState = { comp: txt, ox: x - txt.x, oy: y - txt.y };
           this._emitSelect(null);
           break;
@@ -851,12 +953,29 @@ class CircuitCanvas {
         const term = this.findTerminalNear(x, y);
         const comp = term ? null : this.findComponentAt(x, y);
         if (comp) {
-          this.selected = comp;
-          this.dragState = { comp, ox: x - comp.x, oy: y - comp.y };
-          this._emitSelect(comp);
+          if (e.shiftKey) {
+            const idx = this.selectedComps.indexOf(comp);
+            if (idx >= 0) this.selectedComps.splice(idx, 1);
+            else this.selectedComps.push(comp);
+            this.selected = this.selectedComps[this.selectedComps.length - 1] ?? null;
+            this._emitSelect(this.selected);
+          } else if (this._isCompSelected(comp) && this.selectedComps.length > 1) {
+            this.selected = comp;
+            this._emitSelect(comp);
+          } else {
+            this._setCompSelection([comp], comp);
+          }
+          const group = this.selectedComps.length > 1
+            ? this.selectedComps.map(c => ({ c, x0: c.x, y0: c.y }))
+            : null;
+          this.dragState = {
+            comp, ox: x - comp.x, oy: y - comp.y,
+            anchorX: comp.x, anchorY: comp.y, group,
+          };
         } else if (!term) {
-          this.selected = null;
-          this._emitSelect(null);
+          const scr = this._posScreen(e);
+          this._marquee = { x0: x, y0: y, x1: x, y1: y };
+          this._marqueeScreen = { x0: scr.x, y0: scr.y };
         }
         break;
       }
@@ -884,24 +1003,22 @@ class CircuitCanvas {
       }
 
       case 'delete': {
-        // Cancella etichette testo
+        if (this.selectedComps.length) {
+          this._deleteSelection();
+          break;
+        }
         const tDel = this.findTextAt(x, y);
+        const wIdxPre = this.findWireNear(x, y);
+        const compPre = this.findComponentAt(x, y);
+        if (!tDel && wIdxPre < 0 && !compPre) break;
+        if (!this._confirmDelete('Eliminare l\'elemento selezionato?')) break;
         if (tDel) { this.texts = this.texts.filter(t => t !== tDel); this._emitChange(); break; }
-        const wIdx = this.findWireNear(x, y);
-        if (wIdx >= 0) {
-          this.wires.splice(wIdx, 1);
+        if (wIdxPre >= 0) {
+          this.wires.splice(wIdxPre, 1);
           this._emitChange();
           break;
         }
-        const comp = this.findComponentAt(x, y);
-        if (comp) {
-          this.components = this.components.filter((c) => c !== comp);
-          this.wires = this.wires.filter(
-            (w) => w.from.compId !== comp.id && w.to.compId !== comp.id
-          );
-          if (this.selected === comp) { this.selected = null; this._emitSelect(null); }
-          this._emitChange();
-        }
+        if (compPre) this._removeComps([compPre]);
         break;
       }
 
@@ -922,8 +1039,7 @@ class CircuitCanvas {
         if (COMP_DEFS[this.tool]) {
           const comp = this._makeComp(this.tool, gx, gy, 0, COMP_DEFS[this.tool].defaultValue);
           this.components.push(comp);
-          this.selected = comp;
-          this._emitSelect(comp);
+          this._setCompSelection([comp], comp);
           this._emitChange();
           this.setTool('select');
           this._setStatus(`${COMP_DEFS[this.tool].label} aggiunto`);
@@ -947,6 +1063,13 @@ class CircuitCanvas {
     const { x, y } = this._pos(e);
     this.mousePos = { x, y };
 
+    if (this._marquee) {
+      this._marquee.x1 = x;
+      this._marquee.y1 = y;
+      this.render();
+      return;
+    }
+
     // Hover terminal detection
     const prevHov = this.hovTerm;
     this.hovTerm = this.findTerminalNear(x, y);
@@ -956,15 +1079,29 @@ class CircuitCanvas {
       (prevHov && this.hovTerm &&
         (prevHov.compId !== this.hovTerm.compId || prevHov.termId !== this.hovTerm.termId));
 
-    // Drag
+    // Drag (singolo o gruppo)
     if (this.dragState && this.tool === 'select') {
-      const { comp, ox, oy } = this.dragState;
-      comp.x = snapGrid(x - ox, this.GRID);
-      comp.y = snapGrid(y - oy, this.GRID);
+      const { comp, ox, oy, group, anchorX, anchorY } = this.dragState;
+      const nx = this._snapCoord(x - ox);
+      const ny = this._snapCoord(y - oy);
+      if (group?.length) {
+        const dx = nx - anchorX;
+        const dy = ny - anchorY;
+        for (const { c, x0, y0 } of group) {
+          c.x = this._snapCoord(x0 + dx);
+          c.y = this._snapCoord(y0 + dy);
+        }
+      } else if (this._isTextObject(comp)) {
+        comp.x = nx;
+        comp.y = ny;
+      } else {
+        comp.x = nx;
+        comp.y = ny;
+      }
       this._emitChange();
     }
 
-    if (this.dragState || this.wireState || hovChanged) this.render();
+    if (this.dragState || this.wireState || hovChanged || this._marquee) this.render();
   }
 
   _onMouseUp(e) {
@@ -974,6 +1111,26 @@ class CircuitCanvas {
       this._updateCursor();
       return;
     }
+
+    if (this._marquee && this.tool === 'select') {
+      const scr = this._posScreen(e);
+      const dist = Math.hypot(scr.x - this._marqueeScreen.x0, scr.y - this._marqueeScreen.y0);
+      if (dist >= 6) {
+        this._selectInMarquee(
+          this._marquee.x0, this._marquee.y0,
+          this._marquee.x1, this._marquee.y1,
+          e.shiftKey
+        );
+      } else if (!e.shiftKey) {
+        this._clearSelection();
+      }
+      this._marquee = null;
+      this._marqueeScreen = null;
+      this.dragState = null;
+      this.render();
+      return;
+    }
+
     if (this.dragState) {
       this.dragState = null;
       this.render();
@@ -983,6 +1140,11 @@ class CircuitCanvas {
   _onMouseLeave() {
     this._panDrag = null;
     this.hovTerm  = null;
+    if (this._marquee) {
+      this._marquee = null;
+      this._marqueeScreen = null;
+      this.dragState = null;
+    }
     this.render();
   }
 
@@ -1002,10 +1164,7 @@ class CircuitCanvas {
     }
 
     const comp = this.findComponentAt(x, y);
-    if (comp) {
-      this.selected = comp;
-      this._emitSelect(comp);
-    }
+    if (comp) this._setCompSelection([comp], comp);
   }
 
   _onKey(e) {
@@ -1023,25 +1182,13 @@ class CircuitCanvas {
       case 'e': case 'E': this.rotateSelected();     break;
       case 'Delete':
       case 'Backspace': {
-        if (this.selected) {
-          // Etichetta testo
-          if (this.selected.text !== undefined && this.selected.id?.startsWith('text_')) {
-            this.texts = this.texts.filter(t => t !== this.selected);
-          } else {
-            this.components = this.components.filter((c) => c !== this.selected);
-            this.wires = this.wires.filter(
-              (w) => w.from.compId !== this.selected.id && w.to.compId !== this.selected.id
-            );
-          }
-          this.selected = null;
-          this._emitSelect(null);
-          this._emitChange();
-          this.render();
-        }
+        if (this._deleteSelection()) this.render();
         break;
       }
       case 'Escape':
         this.wireState = null;
+        this._marquee = null;
+        this._clearSelection();
         this.setTool('select');
         break;
     }
@@ -1062,7 +1209,7 @@ class CircuitCanvas {
     const h = this.el.height;
 
     // Background (schermo intero, fuori dal transform)
-    ctx.fillStyle = '#1a1f2e';
+    ctx.fillStyle = this._themeColor('--bg-canvas', '#1a1f2e');
     ctx.fillRect(0, 0, w, h);
 
     // Applica trasformazione zoom + pan
@@ -1071,7 +1218,7 @@ class CircuitCanvas {
     ctx.scale(this._zoom, this._zoom);
 
     // Grid (in coordinate mondo)
-    this._drawGrid();
+    if (this.showGrid) this._drawGrid();
 
     // Text labels (dietro a tutto)
     this._drawTexts();
@@ -1092,6 +1239,8 @@ class CircuitCanvas {
 
     // Animated current particles
     if (this._animParticles?.length) this._renderParticles();
+
+    if (this._marquee) this._drawMarquee();
 
     ctx.restore();
 
@@ -1194,6 +1343,12 @@ class CircuitCanvas {
     return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
   }
 
+  _confirmDelete(message) {
+    const s = window.circuitSimSettings;
+    if (!s?.shouldConfirmDelete()) return true;
+    return confirm(message);
+  }
+
   _drawGrid() {
     const ctx  = this.ctx;
     const g    = this.GRID;
@@ -1205,7 +1360,7 @@ class CircuitCanvas {
     // Raggio del punto adattato allo zoom (rimane ~1.5 px a schermo)
     const r  = 1.5 / this._zoom;
 
-    ctx.fillStyle = '#1e2740';
+    ctx.fillStyle = this._themeColor('--grid-dot', '#1e2740');
     for (let x = x0; x <= x1; x += g) {
       for (let y = y0; y <= y1; y += g) {
         ctx.beginPath();
@@ -1287,9 +1442,27 @@ class CircuitCanvas {
     ctx.restore();
   }
 
+  _drawMarquee() {
+    const m = this._marquee;
+    if (!m) return;
+    const ctx = this.ctx;
+    const x = Math.min(m.x0, m.x1);
+    const y = Math.min(m.y0, m.y1);
+    const w = Math.abs(m.x1 - m.x0);
+    const h = Math.abs(m.y1 - m.y0);
+    ctx.save();
+    ctx.fillStyle = 'rgba(88, 166, 255, 0.12)';
+    ctx.strokeStyle = '#58a6ff';
+    ctx.lineWidth = 1.5 / this._zoom;
+    ctx.setLineDash([6 / this._zoom, 4 / this._zoom]);
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  }
+
   _drawComponent(comp) {
     const ctx = this.ctx;
-    const isSelected = comp === this.selected;
+    const isSelected = this._isCompSelected(comp);
     const color = isSelected ? '#e3b341' : '#79c0ff';
 
     ctx.save();
@@ -1517,6 +1690,7 @@ class CircuitCanvas {
   }
 
   _drawLabel(comp, color) {
+    if (!this.showCompLabels) return;
     if (!comp.value && comp.type !== 'gnd') return;
 
     const ctx    = this.ctx;
@@ -1576,7 +1750,14 @@ class CircuitCanvas {
 
   _emitSelect(comp) {
     this.el.dispatchEvent(
-      new CustomEvent('circuit-select', { bubbles: true, detail: { comp } })
+      new CustomEvent('circuit-select', {
+        bubbles: true,
+        detail: {
+          comp,
+          comps: [...this.selectedComps],
+          count: this.selectedComps.length,
+        },
+      })
     );
   }
 }
