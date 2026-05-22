@@ -1,7 +1,7 @@
 # CircuitSim — Manuale Utente
 
 > **Per chi è questo manuale:** chiunque voglia usare CircuitSim per disegnare e simulare circuiti elettronici, senza necessità di conoscere la parte tecnica interna.  
-> **Versione:** 1.0 — Maggio 2026
+> **Versione:** 1.1 — Maggio 2026 (aggiornata dopo Sprint 1)
 
 ---
 
@@ -14,6 +14,8 @@ CircuitSim è un simulatore di circuiti elettronici che funziona direttamente ne
 - **Simulare il comportamento** del circuito (correnti, tensioni, frequenze)
 - **Visualizzare i risultati** in grafici interattivi
 - **Animare la corrente** che scorre nel circuito
+- **Salvare e ricaricare** i propri circuiti come file JSON
+- **Analizzare segnali** con l'oscilloscopio virtuale multi-canale
 
 Non serve installare nulla: basta aprire il browser all'indirizzo fornito dall'amministratore (di solito `http://localhost:8000`).
 
@@ -55,11 +57,15 @@ Nella barra in alto trovi i pulsanti degli strumenti:
 | **Elimina** | `D` | Cancella componenti, fili o etichette |
 | **R** | `R` | Posiziona una resistenza |
 | **C** | `C` | Posiziona un condensatore |
+| **L** | `L` | Posiziona un induttore *(Sprint 1)* |
 | **V** | `V` | Posiziona un generatore di tensione |
 | **GND** | `G` | Posiziona una massa (riferimento 0 V) |
 | **NPN** | `Q` | Posiziona un transistore BJT NPN |
 | **Testo** | `T` | Inserisce un'etichetta di testo libero |
 | **Ruota** | `E` | Ruota il componente selezionato |
+| **Salva** | — | Scarica il circuito come file JSON *(Sprint 1)* |
+| **Carica** | — | Carica un circuito da file JSON *(Sprint 1)* |
+| **Scope** | — | Apre/chiude l'oscilloscopio multi-canale *(Sprint 1)* |
 
 ### 2.2 Posizionare un Componente
 
@@ -255,7 +261,49 @@ Ogni nodo è visualizzato con un cerchio colorato e la tensione calcolata:
 
 ---
 
-## 9. Scorciatoie da Tastiera — Riepilogo
+## 9. Oscilloscopio Virtuale Multi-Canale
+
+L'oscilloscopio è disponibile dopo aver eseguito un'analisi di tipo **Sinusoide** o **Transitorio**.
+
+### 9.1 Aprire l'Oscilloscopio
+
+Clicca il pulsante **Scope** nella barra strumenti. Il pannello dell'oscilloscopio appare in basso sotto i grafici normali. Per chiuderlo, clicca la **✕** in alto a destra del pannello.
+
+### 9.2 Configurare i Canali
+
+L'oscilloscopio ha **4 canali** (CH1, CH2, CH3, CH4), ognuno con colore distinto:
+
+| Canale | Colore |
+|---|---|
+| CH1 | Blu |
+| CH2 | Verde |
+| CH3 | Rosso |
+| CH4 | Viola |
+
+Per ogni canale:
+1. Seleziona il **nodo** da monitorare nel menu a tendina accanto all'etichetta del canale
+2. Imposta i **V/div** (volt per divisione) nel campo numerico accanto
+
+Dopo la simulazione, il **CH1 viene assegnato automaticamente** al primo nodo disponibile.
+
+### 9.3 Base dei Tempi
+
+Il menu **Base tempi** in alto a destra del pannello controlla quanti millisecondi corrispondono a una divisione orizzontale. Scegli tra 0.1 ms/div e 50 ms/div in base alla frequenza del segnale.
+
+### 9.4 Cursori di Misura
+
+- **Click** sul display dell'oscilloscopio: posiziona il cursore C1 (giallo) poi C2 (ciano)
+- **Trascina** un cursore per spostarlo
+- Quando entrambi i cursori sono posizionati, in basso appare: **Δt** (differenza di tempo) e la **frequenza** corrispondente
+- **Doppio click**: rimuove entrambi i cursori
+
+### 9.5 Trigger
+
+L'oscilloscopio si sincronizza automaticamente sul **fronte di salita** del CH1 all'incrocio con 0 V. Questo stabilizza la visualizzazione dei segnali periodici.
+
+---
+
+## 10. Scorciatoie da Tastiera — Riepilogo
 
 | Tasto | Azione |
 |---|---|
@@ -269,13 +317,14 @@ Ogni nodo è visualizzato con un cerchio colorato e la tensione calcolata:
 | `Q` | Posiziona Transistore NPN |
 | `T` | Strumento Testo |
 | `E` | Ruota componente selezionato |
+| `L` | Posiziona Induttore |
 | `Canc` / `Backspace` | Elimina elemento selezionato |
 | Rotella mouse | Zoom canvas |
 | Spazio + trascina | Pan canvas |
 
 ---
 
-## 10. Domande Frequenti
+## 11. Domande Frequenti
 
 **Il circuito non produce risultati dopo "Simula".**  
 Verifica che: ogni componente abbia almeno un terminale collegato, ci sia almeno una massa (GND) nel circuito, e ci sia almeno un generatore di tensione.
@@ -290,4 +339,4 @@ L'animazione parte automaticamente dopo una simulazione andata a buon fine. Se n
 Clicca il pulsante **Cancella** nella barra strumenti. Questa azione rimuove tutti i componenti, i fili e i grafici.
 
 **Posso salvare il circuito?**  
-Nella versione attuale il salvataggio su file non è ancora disponibile. La sezione **Netlist** nel pannello sinistro mostra il formato JSON del circuito, che puoi copiare manualmente.
+Sì. Clicca il pulsante **Salva** nella toolbar: il browser scaricherà automaticamente un file `.json` con il circuito completo (componenti, fili, etichette). Per ricaricare un circuito salvato, clicca **Carica** e seleziona il file.

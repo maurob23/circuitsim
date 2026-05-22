@@ -62,4 +62,14 @@ Quando vengono aggiunte nuove funzionalità al progetto:
 
 ---
 
-*Documentazione generata: Maggio 2026 — CircuitSim v1.0*
+---
+
+## Versioni
+
+| Documento | Versione | Ultimo aggiornamento |
+|---|---|---|
+| Architettura tecnica | 1.1 | Sprint 1 — Mag 2026 |
+| Manuale utente | 1.1 | Sprint 1 — Mag 2026 |
+| Proposte e miglioramenti | 1.1 | Sprint 1 — Mag 2026 |
+
+*Documentazione aggiornata: Maggio 2026 — CircuitSim v1.1 (Sprint 1)*

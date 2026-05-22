@@ -1,7 +1,16 @@
 # CircuitSim — Documentazione Tecnica
 
 > **Destinatari:** sviluppatori, collaboratori umani e agenti AI che partecipano al progetto.  
-> **Versione:** 1.0 — Maggio 2026
+> **Versione:** 1.1 — Maggio 2026 (aggiornata dopo Sprint 1)
+
+---
+
+## Changelog
+
+| Versione | Data | Modifiche |
+|---|---|---|
+| 1.0 | Mag 2026 | Prima release: RC filter, AC/DC/transient/sinusoidal, BJT NPN, canvas zoom/pan, oscilloscopio mono-canale |
+| 1.1 | Mag 2026 | **Sprint 1**: salvataggio/caricamento JSON, induttore con companion Backward Euler, oscilloscopio multi-canale 4 CH, `node_traces` nel solver |
 
 ---
 
@@ -38,9 +47,6 @@ CircuitSim è un simulatore di circuiti elettronici interattivo, accessibile via
 ```
 circuitsim/
 ├── config/               # Configurazione Django (settings, urls, wsgi)
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
 ├── api/                  # App Django: endpoint REST
 │   ├── views.py          # SimulateView (POST /api/simulate/)
 │   └── urls.py
@@ -54,13 +60,15 @@ circuitsim/
 │       ├── app.js              # Controller principale (UI logic)
 │       ├── circuit-canvas.js   # Editor schematico interattivo
 │       ├── bode-plot.js        # Wrapper Chart.js per Bode plot
-│       └── current-animator.js # Animazione flusso di corrente
+│       ├── current-animator.js # Animazione flusso di corrente
+│       └── oscilloscope.js     # Oscilloscopio multi-canale (Sprint 1)
 ├── templates/
 │   └── index.html        # SPA entry point
 ├── doc/                  # Documentazione (questa cartella)
 ├── manage.py
 ├── requirements.txt
-└── test_mna.py           # Test di validazione del solver
+├── test_mna.py           # Test di validazione del solver MNA base
+└── test_roadmap.py       # Test di regressione Sprint 1 (induttore, node_traces)
 ```
 
 ---
@@ -94,7 +102,8 @@ Risposta JSON  ──►  Browser
 {
   "components": [
     { "id": "R1", "type": "resistor",      "nodes": ["n1","gnd"], "value": 10000 },
-    { "id": "C1", "type": "capacitor",     "nodes": ["n1","n2"], "value": 4.7e-8 },
+    { "id": "C1", "type": "capacitor",     "nodes": ["n1","n2"],  "value": 4.7e-8 },
+    { "id": "L1", "type": "inductor",      "nodes": ["n2","n3"],  "value": 1e-3 },
     { "id": "V1", "type": "voltage_source","nodes": ["n1","gnd"], "value": 1.0 },
     { "id": "Q1", "type": "bjt_npn",       "nodes": ["nb","nc","gnd"],
                                             "value": 100, "ic_q_ma": 1.0 }
@@ -115,7 +124,7 @@ Risposta JSON  ──►  Browser
 |---|---|---|
 | `resistor` | Resistenza | `value` (Ω) |
 | `capacitor` | Condensatore | `value` (F) |
-| `inductor` | Induttore | `value` (H) |
+| `inductor` | **Induttore** *(Sprint 1)* | `value` (H) |
 | `voltage_source` | Generatore tensione | `value` (V), `amplitude` (V picco) |
 | `current_source` | Generatore corrente | `value` (A) |
 | `bjt_npn` | Transistore BJT NPN (hybrid-π) | `value`=β, `ic_q_ma` (mA) |
@@ -141,15 +150,17 @@ Risposta JSON  ──►  Browser
 }
 ```
 
-**Sinusoidal:**
+**Transient / Sinusoidal** *(node_traces aggiunto in Sprint 1)*:
 ```json
 {
-  "times": [...],
-  "vin":   [...],
-  "vout":  [...],
-  "metrics": { "gain_db": -3.01, "phase_deg": -45.0, ... }
+  "times":       [...],
+  "voltages":    [...],
+  "node_traces": { "n1": [...], "n2": [...] },
+  "metrics":     { "time_constant_ms": 0.47, ... }
 }
 ```
+
+Il campo `node_traces` contiene le tensioni di **tutti i nodi** campionate ad ogni istante. È usato dall'oscilloscopio multi-canale per visualizzare forme d'onda arbitrarie.
 
 ### 4.4 Solver MNA (Tier 1)
 
@@ -160,20 +171,26 @@ Il solver implementa la **Modified Nodal Analysis** per circuiti lineari:
 [C  D] [j] = [e]
 ```
 
-- `G` = matrice delle conduttanze nodali (n×n)
-- `B`, `C` = matrici di accoppiamento sorgenti di tensione
-- `v` = vettore tensioni nodali
-- `j` = correnti nei rami delle sorgenti di tensione
+**Metodi di integrazione temporale (Backward Euler):**
 
-**Metodi di integrazione:**
-- **AC**: domain complesso (jω), risolta con `numpy.linalg.solve` per ogni frequenza
-- **Transient / Sinusoidal**: Backward Euler companion model (`C/dt` per condensatori)
+| Elemento | Companion model | Conduttanza | Corrente storica |
+|---|---|---|---|
+| Condensatore C | G_eq = C/dt in parallelo a I_hist | C/dt | I_hist = G_eq · V_C(n-1), direzione **n→p** |
+| Induttore L | G_eq = dt/L in parallelo a I_hist | dt/L | I_hist = i_L(n-1), direzione **p→n** |
+
+> **Nota importante sulla direzione della corrente storica:**  
+> Il Norton companion del condensatore inietta corrente nella direzione **opposta** al flusso di riferimento (oppone la variazione di tensione). L'induttore inietta nella direzione **concorde** al flusso (mantiene la corrente). Questo differisce nel segno e deve essere rispettato per la stabilità numerica.
+
+**Aggiornamento stato induttore dopo ogni step:**
+```python
+i_L(n) = i_L(n-1) + (dt/L) * V_L(n)
+```
 
 **Modello BJT NPN (hybrid-π small-signal):**
 - `gm = Ic_Q / VT` (VT = 26 mV @ 300 K)
 - `rπ = β / gm`  (resistenza base-emettitore)
-- `ro = 100 kΩ`   (resistenza d'uscita, VA≈100 V @ 1 mA)
-- VCCS: `ic = gm · vbe` (corrente controllata da tensione, stamp asimmetrico)
+- `ro = 100 kΩ`   (resistenza d'uscita, VA ≈ 100 V @ 1 mA)
+- VCCS: `ic = gm · vbe` (stamp asimmetrico sulla matrice G)
 
 ---
 
@@ -188,35 +205,70 @@ app.js  (controller)
   │     ├── UnionFind           — algoritmo per generazione netlist
   │     ├── setTool()           — gestione tool attivo
   │     ├── generateNetlist()   — produce JSON netlist
+  │     ├── exportCircuit()     — serializza circuito (Sprint 1)
+  │     ├── importCircuit()     — carica circuito da JSON (Sprint 1)
   │     ├── computeNodeMap()    — calcola posizioni nodi
   │     ├── render()            — disegno canvas (componenti, fili, nodi, particelle)
   │     └── openInlineEditor()  — editing inline etichette testo
-  ├── BodePlot       (bode-plot.js)   — grafici Bode (Chart.js)
+  ├── BodePlot       (bode-plot.js)         — grafici Bode (Chart.js)
   ├── CurrentAnimator (current-animator.js) — animazione particelle corrente
+  ├── Oscilloscope   (oscilloscope.js)      — oscilloscopio 4 canali (Sprint 1)
   └── Chart.js instances (vtChart, vfChart) — grafici V(t) e V(f)
 ```
 
-### 5.2 Aggiungere un Nuovo Componente
+### 5.2 Classe Oscilloscope (`oscilloscope.js`)
 
-Per aggiungere un componente (es. `inductor`) seguire questi passi:
+```javascript
+const scope = new Oscilloscope('scope-canvas', 'oscilloscope-panel');
+
+// Caricamento dati dopo simulazione
+scope.setData(times_ms_array, nodeTracesObject);
+
+// Assegnare un nodo a un canale (0–3)
+scope.setChannel(0, 'n2');    // CH1 → nodo n2
+
+// Mostrare/nascondere il pannello
+scope.show(true);
+scope.toggle();
+```
+
+**Proprietà configurabili per canale (`scope.channels[i]`):**
+- `nodeId`: nome del nodo da monitorare
+- `vdiv`: volt per divisione (default 1.0 V)
+- `offset`: offset verticale in V (default 0)
+- `enabled`: visibilità del canale
+
+**Proprietà globali:**
+- `scope.tdiv`: ms per divisione temporale (base dei tempi)
+- `scope.trigLevel`: soglia di trigger in V (default 0)
+- `scope._cursors[0/1]`: posizione pixel dei cursori di misura
+
+### 5.3 Serializzazione Circuito
+
+**Formato del file JSON prodotto da `exportCircuit()`:**
+```json
+{
+  "version":    "1.0",
+  "nextId":     12,
+  "components": [ { "id": "resistor_1", "type": "resistor", "x": 120, "y": 200, ... } ],
+  "wires":      [ { "from": { "compId": "...", "termId": "a" }, "to": { ... } } ],
+  "texts":      [ { "id": "text_5", "x": 80, "y": 100, "text": "Output", ... } ]
+}
+```
+
+### 5.4 Aggiungere un Nuovo Componente
 
 1. **`circuit-canvas.js` — `COMP_DEFS`:** aggiungere la definizione con terminali, valore di default, unità e `netlistType`.
 2. **`circuit-canvas.js` — `_drawComponent()`:** aggiungere un `case` nello switch e implementare il metodo `_drawXxx(ctx)`.
-3. **`circuit-canvas.js` — `formatValue()`:** aggiungere la formattazione dell'unità (es. H, mH, µH).
-4. **`solver/tier1/mna.py` — `_build_mna()`**: aggiungere il caso `elif ctype == "inductor"` con lo stamp corretto.
-5. **`solver/tier1/mna.py` — `_build_mna_transient()` e `_build_mna_sine()`**: gestire il modello companion per l'analisi nel tempo.
-6. **`templates/index.html`**: aggiungere il pulsante toolbar con icona SVG.
-7. **`static/js/app.js` — `renderCompEditor()`**: eventuale campo valore specializzato nel sidebar.
+3. **`circuit-canvas.js` — `formatValue()`:** aggiungere la formattazione dell'unità.
+4. **`circuit-canvas.js` — `_makeComp()`:** aggiungere il prefisso label nel dizionario `prefix`.
+5. **`solver/tier1/mna.py` — `_build_mna()`**: stamp per AC/DC.
+6. **`solver/tier1/mna.py` — `_build_mna_transient()` e `_build_mna_sine()`**: companion model temporale.
+7. **`templates/index.html`**: pulsante toolbar con SVG.
+8. **`static/js/app.js` — `renderCompEditor()`**: campi editor nel sidebar.
+9. **`static/js/app.js` — toolbar `msgs`**: messaggio di stato per il tool.
 
-### 5.3 Aggiungere un Nuovo Tipo di Analisi
-
-1. **`solver/router.py`**: aggiungere la route verso la nuova funzione del solver.
-2. **`solver/tier1/mna.py`**: implementare `solve_nuova_analisi(netlist)`.
-3. **`api/views.py`**: aggiungere i nuovi campi alla risposta JSON se necessario.
-4. **`templates/index.html`**: aggiungere il radio button nella sezione analisi.
-5. **`static/js/app.js`**: implementare `handleSimResult()` per il nuovo tipo, aggiungere l'aggiornamento dei grafici.
-
-### 5.4 Coordinate Canvas
+### 5.5 Coordinate Canvas
 
 La canvas supporta zoom e pan. Le conversioni coordinate sono:
 
@@ -245,7 +297,7 @@ I componenti sono posizionati in coordinate **world**. La griglia di snap è 40 
 ```bash
 curl -X POST http://localhost:8000/api/simulate/ \
   -H "Content-Type: application/json" \
-  -d '{"components":[...],"analysis":{"type":"ac"}}'
+  -d '{"components":[...],"analysis":{"type":"sinusoidal","frequency":1000}}'
 ```
 
 ---
@@ -284,14 +336,18 @@ python manage.py runserver
 ## 8. Test
 
 ```bash
-# Test del solver MNA (validazione numerica)
+# Test del solver MNA base (RC, AC, metriche)
 python test_mna.py
 
-# Test API (richiede server attivo)
-curl -X POST http://localhost:8000/api/simulate/ \
-  -H "Content-Type: application/json" \
-  -d @doc/examples/rc_filter.json
+# Test regressione Sprint 1 (induttore, node_traces, RL transitorio)
+python test_roadmap.py
 ```
+
+**Copertura attuale di `test_roadmap.py`:**
+1. `solve_sinusoidal` → `node_traces` presente e correttamente dimensionato
+2. `solve_transient` → `node_traces` presente e correttamente dimensionato
+3. Filtro RL bassa-passa → fc = 15 915 Hz (errore < 2%)
+4. Transitorio RL → V_L a regime ≈ 0 V (errore < 0.5 V)
 
 ---
 
@@ -299,8 +355,9 @@ curl -X POST http://localhost:8000/api/simulate/ \
 
 - **Python**: PEP 8, type hints dove possibile, docstring per funzioni pubbliche
 - **JavaScript**: ES2022, `const`/`let`, nessun framework esterno nel core
-- **Commit**: messaggio in inglese, formato `type: short description`
-- **Nodi GND**: sempre denominati `"gnd"`, `"0"` o `"GND"` (case-insensitive, set `_GND` nel solver)
+- **Commit**: formato `type: short description` (feat/fix/docs/test/refactor)
+- **Nodi GND**: sempre denominati `"gnd"`, `"0"` o `"GND"` (set `_GND` nel solver)
+- **id componente**: obbligatorio nel netlist prodotto dalla canvas; il solver accetta anche componenti senza `id` usando `id(obj)` Python come fallback
 
 ---
 

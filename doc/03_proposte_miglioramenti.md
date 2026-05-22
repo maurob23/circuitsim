@@ -2,7 +2,7 @@
 
 > **Destinatari:** team di sviluppo, stakeholder, agenti AI di sviluppo.  
 > **Scopo:** definire la roadmap evolutiva a partire dall'architettura attuale, con focus su strumenti di misura virtuali, integrazione AI e frontiere della simulazione elettronica intelligente.  
-> **Versione:** 1.0 — Maggio 2026
+> **Versione:** 1.1 — Maggio 2026 (aggiornata dopo Sprint 1)
 
 ---
 
@@ -295,18 +295,35 @@ Questo consente di:
 
 ## 7. Priorità Suggerite (Roadmap)
 
+### Sprint 1 — Completato (Maggio 2026)
+
+| Stato | Feature | Note |
+|---|---|---|
+| ✅ Done | Salvataggio/caricamento circuiti JSON | `exportCircuit()` / `importCircuit()` + toolbar |
+| ✅ Done | Induttore (simbolo canvas + solver) | Companion Backward Euler corretto; shortcut `L` |
+| ✅ Done | Oscilloscopio multi-canale 4 CH | Trigger, V/div, base tempi, cursori Δt |
+
+### Sprint 2 — Prossimo (priorità alta)
+
 | Priorità | Feature | Impatto | Complessità |
 |---|---|---|---|
-| 🔴 Alta | Salvataggio/caricamento circuiti JSON | Alto | Bassa |
-| 🔴 Alta | Induttore (simbolo canvas) | Alto | Bassa |
-| 🔴 Alta | Oscilloscopio multi-canale | Alto | Media |
-| 🟡 Media | Solver non lineare (Newton-Raphson) | Molto alto | Alta |
-| 🟡 Media | AI Design Assistant (Livello 1) | Alto | Media |
-| 🟡 Media | Export PNG/PDF | Medio | Bassa |
-| 🟡 Media | Docker + deploy cloud | Alto | Media |
-| 🟢 Bassa | Collaborazione real-time | Medio | Molto alta |
-| 🟢 Bassa | Analisi Monte Carlo | Medio | Alta |
+| 🔴 Alta | Solver non lineare (Newton-Raphson) | Molto alto | Alta |
+| 🔴 Alta | Export PNG/PDF schema + grafici | Medio | Bassa |
+| 🔴 Alta | Docker + deploy cloud (Railway/Render) | Alto | Media |
+| 🔴 Alta | AI Design Assistant (Livello 1) | Alto | Media |
+
+### Sprint 3+ — Futuro
+
+| Priorità | Feature | Impatto | Complessità |
+|---|---|---|---|
+| 🟡 Media | MOSFET N/P-channel (small-signal) | Alto | Media |
+| 🟡 Media | BJT PNP (già predisposto nel codice) | Medio | Bassa |
+| 🟡 Media | Diodo ideale (switching model) | Alto | Media |
+| 🟡 Media | Trasformatore (mutua induzione MNA) | Alto | Alta |
+| 🟡 Media | Analisi di stabilità polo-zero | Alto | Alta |
+| 🟢 Bassa | Analisi Monte Carlo / sensitività | Medio | Alta |
 | 🟢 Bassa | AI Co-progettista (Livello 2) | Molto alto | Molto alta |
+| 🟢 Bassa | Collaborazione real-time (CRDT) | Medio | Molto alta |
 
 ---
 
