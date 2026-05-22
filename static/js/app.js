@@ -35,6 +35,220 @@ const bode      = new BodePlot('chart-magnitude', 'chart-phase');
 const transient = new TransientPlot('chart-transient');
 const animator  = new CurrentAnimator(canvas);
 
+// ─── Pannelli collassabili sidebar destro ────────────────────────────────────
+
+function _makeSidebarToggle(toggleId, bodyId, chevronId) {
+  const btn     = document.getElementById(toggleId);
+  const body    = document.getElementById(bodyId);
+  const chevron = document.getElementById(chevronId);
+  if (!btn || !body || !chevron) return;
+  let open = true;
+  btn.addEventListener('click', () => {
+    open = !open;
+    body.style.display = open ? '' : 'none';
+    chevron.classList.toggle('open', open);
+  });
+}
+_makeSidebarToggle('bode-mag-toggle',   'bode-mag-body',   'bode-mag-chevron');
+_makeSidebarToggle('bode-phase-toggle', 'bode-phase-body', 'bode-phase-chevron');
+
+// ─── Bode espanso ─────────────────────────────────────────────────────────────
+
+let _expandChart = null;   // istanza Chart.js nel pannello grande
+let _lastAcData  = null;   // ultimi dati AC per il re-render
+
+const _expandPanel = document.getElementById('bode-expand-panel');
+const _expandTitle = document.getElementById('bode-expand-title');
+
+function _openExpandedBode(mode) {   // mode = 'mag' | 'phase'
+  if (!_lastAcData) return;
+  _expandTitle.textContent = mode === 'mag' ? 'Bode plot — Ampiezza (dB)' : 'Bode plot — Fase (°)';
+  _expandPanel.style.display = 'flex';
+
+  // Distruggi istanza precedente se esiste
+  if (_expandChart) { _expandChart.destroy(); _expandChart = null; }
+
+  const canvas = document.getElementById('chart-bode-expand');
+  const { frequencies, magnitude_db, phase_deg } = _lastAcData;
+  const yData   = mode === 'mag' ? magnitude_db : phase_deg;
+  const yLabel  = mode === 'mag' ? 'Ampiezza (dB)' : 'Fase (°)';
+  const color   = mode === 'mag' ? '#3fb950' : '#58a6ff';
+
+  // Resetta dimensioni esplicite dal render precedente
+  canvas.removeAttribute('width');
+  canvas.removeAttribute('height');
+
+  _expandChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: yLabel,
+        data: frequencies.map((f, i) => ({ x: f, y: yData[i] })).filter(p => isFinite(p.x) && isFinite(p.y)),
+        borderColor: color,
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0,
+      }]
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: 'logarithmic',
+          title: { display: true, text: 'Frequenza (Hz)', color: '#8b949e', font: { size: 11 } },
+          ticks: { color: '#8b949e', font: { size: 10 },
+            callback: v => v >= 1000 ? (v / 1000) + 'k' : v },
+          grid: { color: '#21262d' },
+        },
+        y: {
+          title: { display: true, text: yLabel, color: '#8b949e', font: { size: 11 } },
+          ticks: { color: '#c9d1d9', font: { size: 11 } },
+          grid: { color: '#21262d' },
+        }
+      },
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { size: 11 } } },
+        zoom: {
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+          pan:  { enabled: true, mode: 'x' },
+        }
+      }
+    }
+  });
+
+  // Auto-adatta alle dimensioni reali del contenitore dopo il layout
+  requestAnimationFrame(() => { if (_expandChart) _expandChart.resize(); });
+}
+
+document.getElementById('btn-expand-mag')  .addEventListener('click', e => { e.stopPropagation(); _openExpandedBode('mag'); });
+document.getElementById('btn-expand-phase').addEventListener('click', e => { e.stopPropagation(); _openExpandedBode('phase'); });
+document.getElementById('btn-bode-expand-close').addEventListener('click', () => {
+  _expandPanel.style.display = 'none';
+  if (_expandChart) { _expandChart.destroy(); _expandChart = null; }
+});
+
+// ─── Help componenti + guida contestuale ──────────────────────────────────────
+
+const compHelpModal = new CompHelpModal();
+const contextHelp   = new ContextHelp('analyst-hover-title', 'analyst-hover-text');
+contextHelp.bind();
+contextHelp.reset();
+
+document.querySelectorAll('.comp-help-btn[data-help]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    compHelpModal.open(btn.dataset.help);
+  });
+});
+
+// ─── Calcolatrice ─────────────────────────────────────────────────────────────
+
+const calculator = new Calculator();
+document.getElementById('btn-open-calc')?.addEventListener('click', () => calculator.open());
+
+const capConverter = new CapConverterTool();
+const filterCalc   = new FilterCalcTool();
+const freqMeter    = new FreqMeterTool();
+document.getElementById('btn-open-cap-conv')?.addEventListener('click', () => capConverter.open());
+document.getElementById('btn-open-filter-calc')?.addEventListener('click', () => filterCalc.open());
+document.getElementById('btn-open-freq-meter')?.addEventListener('click', () => freqMeter.open());
+
+window.circuitSimGetMetrics = () => _lastSimState?.metrics ?? null;
+window.circuitSimGetAnalysisType = () => _lastSimState?.analysisType ?? null;
+
+// ─── SimAnalyst ──────────────────────────────────────────────────────────────
+
+const analyst      = new SimAnalyst('analyst-content');
+const _analystPanel = document.getElementById('analyst-panel');
+const _ctxBadge     = document.getElementById('analyst-ctx-badge');
+
+// Ultimo stato simulazione memorizzato per il re-render contestuale
+let _lastSimState = null;   // { analysisType, metrics, components }
+
+const CTX_LABEL = {
+  circuit:   'Circuito',
+  'bode-mag': 'Bode Amp',
+  'bode-phase': 'Bode Fase',
+  transient:  'Transitorio',
+  sine:       'Sinusoide',
+  scope:      'Scope',
+  vt:         'V(t)',
+};
+
+// Mappa contesto → tipo analisi usato da SimAnalyst
+const CTX_TYPE = {
+  circuit:     null,         // usa l'ultimo tipo simulato
+  'bode-mag':  'ac',
+  'bode-phase':'ac',
+  transient:   'transient',
+  sine:        'sinusoidal',
+  scope:       'sinusoidal',
+  vt:          null,
+};
+
+function _focusAnalyst(context) {
+  if (!_lastSimState) return;
+
+  const type = CTX_TYPE[context] ?? _lastSimState.analysisType;
+  analyst.analyze(type, _lastSimState.metrics, _lastSimState.components);
+
+  // Badge contesto
+  _ctxBadge.textContent = CTX_LABEL[context] ?? context;
+  _ctxBadge.classList.add('visible');
+
+  // Flash border
+  _analystPanel.classList.remove('flash');
+  void _analystPanel.offsetWidth;   // reflow per riavviare animazione
+  _analystPanel.classList.add('flash');
+  setTimeout(() => _analystPanel.classList.remove('flash'), 750);
+}
+
+// ─── Click handler su canvas e grafici ───────────────────────────────────────
+
+function _attachAnalystTriggers() {
+  // Circuito
+  const schematicEl = document.getElementById('schematic-canvas');
+  if (schematicEl) schematicEl.addEventListener('click', () => _focusAnalyst('circuit'));
+
+  // Bode magnitude
+  const magCanvas = document.getElementById('chart-magnitude');
+  if (magCanvas) magCanvas.addEventListener('click', () => _focusAnalyst('bode-mag'));
+
+  // Bode phase
+  const phaseCanvas = document.getElementById('chart-phase');
+  if (phaseCanvas) phaseCanvas.addEventListener('click', () => _focusAnalyst('bode-phase'));
+
+  // Transient chart
+  const transCanvas = document.getElementById('chart-transient');
+  if (transCanvas) transCanvas.addEventListener('click', () => _focusAnalyst('transient'));
+
+  // Oscilloscope canvas
+  const scopeCanvas = document.getElementById('scope-canvas');
+  if (scopeCanvas) scopeCanvas.addEventListener('click', () => _focusAnalyst('scope'));
+
+  // V(t) chart
+  const vtCanvas = document.getElementById('chart-vt');
+  if (vtCanvas) vtCanvas.addEventListener('click', () => _focusAnalyst('vt'));
+
+  // Bode espanso
+  const expandCanvas = document.getElementById('chart-bode-expand');
+  if (expandCanvas) expandCanvas.addEventListener('click', () => _focusAnalyst('bode-mag'));
+}
+
+_attachAnalystTriggers();
+
+// ─── Sync palette / toolbar quando il tool cambia via shortcut ───────────────
+
+document.getElementById('circuit-canvas').addEventListener('toolchange', e => {
+  const tool = e.detail;
+  document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+  const match = document.querySelector(`[data-tool="${tool}"]`);
+  if (match) match.classList.add('active');
+});
+
 // ─── Oscilloscopio ───────────────────────────────────────────────────────────
 
 const scope = new Oscilloscope('scope-canvas', 'oscilloscope-panel');
@@ -48,17 +262,18 @@ document.getElementById('btn-scope-auto')  .addEventListener('click', () => {
 });
 
 // Toggle grafico V(t): permette di nasconderlo quando si usa solo lo scope
-const _vtPanel   = document.getElementById('vt-panel');
-const _btnTogVt  = document.getElementById('btn-toggle-vt');
-let   _vtVisible = false;   // nascosto di default: lo scope è il viewer principale
-// Stato iniziale pulsante: V(t) nascosto
+const _vtPanel     = document.getElementById('vt-panel');
+const _bottomPanel = document.getElementById('bottom-panel');
+const _btnTogVt    = document.getElementById('btn-toggle-vt');
+let   _vtVisible   = false;
 _btnTogVt.style.opacity = '0.4';
 _btnTogVt.title = 'Mostra grafico V(t)';
 _btnTogVt.addEventListener('click', () => {
   _vtVisible = !_vtVisible;
-  _vtPanel.style.display  = _vtVisible ? '' : 'none';
-  _btnTogVt.style.opacity = _vtVisible ? '1' : '0.4';
-  _btnTogVt.title         = _vtVisible ? 'Nascondi grafico V(t)' : 'Mostra grafico V(t)';
+  _vtPanel.style.display     = _vtVisible ? '' : 'none';
+  _bottomPanel.style.display = _vtVisible ? '' : 'none';
+  _btnTogVt.style.opacity    = _vtVisible ? '1' : '0.4';
+  _btnTogVt.title            = _vtVisible ? 'Nascondi grafico V(t)' : 'Mostra grafico V(t)';
 });
 
 // Canali CH1–CH4: sync dropdown e vdiv
@@ -337,35 +552,58 @@ function setBadge(id, text, isMna) {
   el.className   = 'bottom-badge' + (isMna ? ' mna' : '');
 }
 
+// ─── Palette componenti — accordion toggle ────────────────────────────────────
+
+document.querySelectorAll('.comp-cat-header').forEach(header => {
+  header.addEventListener('click', () => {
+    header.closest('.comp-cat').classList.toggle('open');
+  });
+});
+
+// ─── Attivazione tool (toolbar + palette) ─────────────────────────────────────
+
+const TOOL_MSGS = {
+  select:    'Seleziona / trascina — E per ruotare',
+  wire:      'Filo — clicca nodo iniziale poi nodo finale',
+  delete:    'Elimina — clicca su un componente o filo',
+  resistor:  'Resistenza — clicca sulla canvas per piazzare (R)',
+  capacitor: 'Condensatore — clicca per piazzare (C)',
+  inductor:  'Induttore — clicca per piazzare (L)',
+  gnd:       'Massa — clicca per piazzare il riferimento (G)',
+  vsource:   'Generatore di tensione — clicca per piazzare (V)',
+  bjt_npn:   'BJT NPN — clicca per piazzare il transistore (Q)',
+  text:      'Testo — clicca sulla canvas per inserire un\'etichetta (T)',
+};
+
+function _activateTool(tool, btn) {
+  if (btn && btn.disabled) return;
+  canvas.setTool(tool);
+  document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (TOOL_MSGS[tool]) setStatus(TOOL_MSGS[tool]);
+}
+
 // ─── Toolbar ──────────────────────────────────────────────────────────────────
 
 document.getElementById('toolbar').addEventListener('click', e => {
   const btn = e.target.closest('[data-tool]');
   if (!btn) return;
-  const tool = btn.dataset.tool;
-  canvas.setTool(tool);
-  document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const msgs = {
-    select:    'Seleziona / trascina — E per ruotare',
-    wire:      'Filo: clicca terminale → terminale',
-    delete:    'Elimina componente, filo o etichetta',
-    resistor:  'Posiziona resistenza (clic sulla griglia)',
-    capacitor: 'Posiziona condensatore',
-    inductor:  'Posiziona induttore (1 mH default)',
-    vsource:   'Posiziona generatore V',
-    gnd:       'Posiziona massa',
-    bjt_npn:   'Posiziona BJT NPN — B=origine, C=alto-destra, E=basso-destra',
-    text:      'Testo: clicca per inserire un\'etichetta — doppio-click per editarla',
-  };
-  setStatus(msgs[tool] ?? '');
+  _activateTool(btn.dataset.tool, btn);
 });
+
+// ─── Palette componenti — selezione item ──────────────────────────────────────
+
+document.querySelector('.comp-palette-section').addEventListener('click', e => {
+  if (e.target.closest('.comp-help-btn')) return;
+  const btn = e.target.closest('.comp-item[data-tool]');
+  if (!btn || btn.disabled) return;
+  _activateTool(btn.dataset.tool, btn);
+});
+
 
 document.getElementById('btn-example').addEventListener('click', () => {
   canvas.loadExample();
-  canvas.setTool('select');
-  document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
-  document.querySelector('[data-tool="select"]').classList.add('active');
+  _activateTool('select', document.querySelector('[data-tool="select"]'));
   updateAnalyticalFromSliders();
   setStatus('Circuito RC caricato — fc = 338 Hz, τ = 0.47 ms');
 });
@@ -777,9 +1015,26 @@ function parseSI(str) {
 
 // ─── Circuit change ───────────────────────────────────────────────────────────
 
+// ─── Analisi Parametrica ─────────────────────────────────────────────────────
+
+const paramAnalyzer = new ParamAnalyzer('pa-content');
+
+// Toggle espandi/comprimi
+const _paToggle  = document.getElementById('pa-toggle');
+const _paBody    = document.getElementById('pa-body');
+const _paChevron = document.getElementById('pa-chevron');
+let   _paOpen    = false;
+_paToggle.addEventListener('click', () => {
+  _paOpen = !_paOpen;
+  _paBody.style.display    = _paOpen ? '' : 'none';
+  _paChevron.classList.toggle('open', _paOpen);
+  if (_paOpen) paramAnalyzer.update(canvas.components);
+});
+
 document.getElementById('circuit-canvas').addEventListener('circuit-change', () => {
   updateNetlistPreview();
   _refreshNodeOverlay();
+  if (_paOpen) paramAnalyzer.update(canvas.components);
 });
 
 // ─── Selezione nodo sonda ─────────────────────────────────────────────────────
@@ -857,6 +1112,13 @@ function handleSimResult(data) {
                                 .filter(p => isFinite(p.x) && isFinite(p.y));
       setDS(vfChart, 'V(f) MNA', pts, C_OUT);
       setBadge('badge-vf', `MNA Tier ${data.tier_used}`, true);
+      // Salva dati per il pannello espanso
+      _lastAcData = { frequencies: r.frequencies, magnitude_db: r.magnitude_db, phase_deg: r.phase_deg };
+      // Se il pannello espanso è aperto aggiorna il grafico
+      if (_expandPanel.style.display !== 'none') {
+        const mode = _expandTitle.textContent.includes('Fase') ? 'phase' : 'mag';
+        _openExpandedBode(mode);
+      }
     }
     updateMetrics(data.metrics);
     // AC: anima corrente sinusoidale alla frequenza di taglio
@@ -933,6 +1195,24 @@ function handleSimResult(data) {
 
   // Aggiorna overlay nodi con tensioni dal risultato di simulazione
   _refreshNodeOverlay(data);
+
+  // ── Memorizza stato per analisi contestuale ────────────────────────────────
+  _lastSimState = {
+    analysisType: data.analysis_type,
+    metrics:      data.metrics ?? {},
+    components:   canvas.components,
+  };
+
+  // Aggiorna automaticamente il pannello con le osservazioni correnti
+  analyst.analyze(data.analysis_type, data.metrics ?? {}, canvas.components);
+
+  // Flash leggero per segnalare l'aggiornamento
+  _analystPanel.classList.remove('flash');
+  void _analystPanel.offsetWidth;
+  _analystPanel.classList.add('flash');
+  setTimeout(() => _analystPanel.classList.remove('flash'), 750);
+  _ctxBadge.textContent = { ac: 'AC', sinusoidal: 'Sine', transient: 'Step', dc: 'DC' }[data.analysis_type] ?? data.analysis_type;
+  _ctxBadge.classList.add('visible');
 }
 
 // ─── Avvio animazione corrente ────────────────────────────────────────────────

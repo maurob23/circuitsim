@@ -253,6 +253,8 @@ class CircuitCanvas {
     this.dragState = null;
     this.render();
     this._updateCursor();
+    // Notifica il resto dell'app (palette, toolbar) del cambio tool
+    this.canvas.dispatchEvent(new CustomEvent('toolchange', { detail: tool, bubbles: true }));
   }
 
   clearAll() {
@@ -575,10 +577,14 @@ class CircuitCanvas {
 
     const finish = (save) => {
       if (wrap.style.display === 'none') return;  // già chiuso
+      // Cattura il valore PRIMA di nascondere il wrap: un secondo openInlineEditor
+      // chiamato dallo stesso mousedown che genera questo blur azzera input.value
+      // prima che il blur stesso arrivi, causando la perdita del testo.
+      const val = input.value;
       wrap.style.display = 'none';
       input.removeEventListener('keydown', onKey);
       input.removeEventListener('blur',    onBlur);
-      if (save && input.value.trim()) onConfirm(input.value.trim());
+      if (save && val.trim()) onConfirm(val.trim());
     };
     const onKey  = (e) => {
       if (e.key === 'Enter')  { e.preventDefault(); finish(true);  }
@@ -900,7 +906,11 @@ class CircuitCanvas {
       }
 
       case 'text': {
-        // Apri editor inline per nuova etichetta
+        // Se l'editor inline è già aperto il mousedown corrente genererà un blur
+        // che salverà il testo attivo. Non aprire un secondo editor: evita che
+        // input.value venga azzerato prima che il blur del primo possa leggerlo.
+        const _ew = document.getElementById('inline-editor-wrap');
+        if (_ew && _ew.style.display !== 'none') break;
         this.openInlineEditor(gx, gy, '', (txt) => {
           this.addText(gx, gy, txt);
         });

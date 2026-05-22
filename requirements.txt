@@ -1,4 +1,14 @@
+# CircuitSim — dipendenze Python
+# Installazione: pip install -r requirements.txt
+
+# Framework web
 Django>=4.2,<5.2
-djangorestframework>=3.15
-numpy>=2.0
-scipy>=1.14
+djangorestframework>=3.15,<4.0
+
+# Solver MNA (AC, transitorio, sinusoidale)
+numpy>=2.0,<3.0
+scipy>=1.14,<2.0
+
+# Produzione / container (NAS, Docker)
+gunicorn>=22.0,<24.0
+whitenoise>=6.6,<7.0

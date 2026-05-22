@@ -28,15 +28,15 @@
 
   <div class="toolbar" id="toolbar">
     <div class="tool-group">
-      <button class="tool-btn active" data-tool="select" title="Seleziona / sposta (S)">
+      <button class="tool-btn active" data-tool="select" data-help-id="select" title="Seleziona / sposta (S)">
         <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 2 L2 12 L5.5 9 L7.5 14 L9 13.5 L7 8.5 L11 8.5 Z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
         Seleziona
       </button>
-      <button class="tool-btn" data-tool="wire" title="Filo di connessione (W)">
+      <button class="tool-btn" data-tool="wire" data-help-id="wire" title="Filo di connessione (W)">
         <svg width="16" height="16" viewBox="0 0 16 16"><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="2"/><circle cx="2" cy="8" r="1.5" fill="currentColor"/><circle cx="14" cy="8" r="1.5" fill="currentColor"/></svg>
         Filo
       </button>
-      <button class="tool-btn" data-tool="delete" title="Elimina (Del)">
+      <button class="tool-btn" data-tool="delete" data-help-id="delete" title="Elimina (Del)">
         <svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" stroke-width="2"/></svg>
         Elimina
       </button>
@@ -45,84 +45,16 @@
     <div class="tool-separator"></div>
 
     <div class="tool-group">
-      <button class="tool-btn component-btn" data-tool="resistor" title="Resistenza (R)">
-        <svg width="32" height="16" viewBox="0 0 32 16">
-          <line x1="0" y1="8" x2="6" y2="8" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M6 8 L7.5 3 L9 13 L10.5 3 L12 13 L13.5 3 L15 13 L16.5 3 L18 8" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <line x1="18" y1="8" x2="32" y2="8" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        R
-      </button>
-      <button class="tool-btn component-btn" data-tool="capacitor" title="Condensatore (C)">
-        <svg width="32" height="16" viewBox="0 0 32 16">
-          <line x1="0" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="13" y1="2" x2="13" y2="14" stroke="currentColor" stroke-width="2"/>
-          <line x1="16" y1="2" x2="16" y2="14" stroke="currentColor" stroke-width="2"/>
-          <line x1="16" y1="8" x2="32" y2="8" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        C
-      </button>
-      <button class="tool-btn component-btn" data-tool="vsource" title="Generatore di tensione (V)">
-        <svg width="16" height="32" viewBox="0 0 16 32" style="height:20px;width:10px;">
-          <circle cx="8" cy="16" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <line x1="8" y1="9" x2="8" y2="4" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="8" y1="23" x2="8" y2="28" stroke="currentColor" stroke-width="1.5"/>
-          <text x="8" y="14" text-anchor="middle" font-size="6" fill="currentColor">+</text>
-          <text x="8" y="22" text-anchor="middle" font-size="6" fill="currentColor">−</text>
-        </svg>
-        V
-      </button>
-      <button class="tool-btn component-btn" data-tool="gnd" title="Massa (G)">
-        <svg width="16" height="16" viewBox="0 0 16 16">
-          <line x1="8" y1="2" x2="8" y2="7" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="2"/>
-          <line x1="4" y1="10" x2="12" y2="10" stroke="currentColor" stroke-width="2"/>
-          <line x1="6" y1="13" x2="10" y2="13" stroke="currentColor" stroke-width="2"/>
-        </svg>
-        GND
-      </button>
-      <!-- Induttore -->
-      <button class="tool-btn component-btn" data-tool="inductor" title="Induttore (L)">
-        <svg width="32" height="16" viewBox="0 0 80 16">
-          <line x1="0" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M10,8 A10,10 0 0,1 30,8" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <path d="M30,8 A10,10 0 0,1 50,8" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <path d="M50,8 A10,10 0 0,1 70,8" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <line x1="70" y1="8" x2="80" y2="8" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        L
-      </button>
-      <!-- BJT NPN -->
-      <button class="tool-btn component-btn" data-tool="bjt_npn" title="Transistore BJT NPN (Q)">
-        <svg width="20" height="24" viewBox="0 0 40 48" style="height:24px;width:20px;">
-          <!-- filo base -->
-          <line x1="0" y1="24" x2="12" y2="24" stroke="currentColor" stroke-width="2"/>
-          <!-- barra verticale -->
-          <line x1="12" y1="10" x2="12" y2="38" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-          <!-- collettore -->
-          <line x1="12" y1="16" x2="28" y2="4"  stroke="currentColor" stroke-width="2"/>
-          <!-- emettitore -->
-          <line x1="12" y1="32" x2="28" y2="44" stroke="currentColor" stroke-width="2"/>
-          <!-- freccia emettitore NPN -->
-          <polyline points="22,40 28,44 24,36" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/>
-        </svg>
-        NPN
-      </button>
-    </div>
-
-    <div class="tool-separator"></div>
-
-    <div class="tool-group">
-      <button class="tool-btn" id="btn-rotate" title="Ruota componente (E)">
+      <button class="tool-btn" id="btn-rotate" data-help-id="rotate" title="Ruota componente (E)">
         <svg width="16" height="16" viewBox="0 0 16 16"><path d="M13.5 2.5 A6 6 0 1 0 14 9" stroke="currentColor" stroke-width="1.5" fill="none"/><polyline points="14,2 14,6 10,6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
         Ruota
       </button>
-      <button class="tool-btn accent" id="btn-example" title="Carica circuito RC di esempio">
+      <button class="tool-btn accent" id="btn-example" data-help-id="example" title="Carica circuito RC di esempio">
         Esempio RC
       </button>
       <button class="tool-btn" id="btn-clear" title="Cancella tutto">Cancella</button>
       <!-- Salva / Carica -->
-      <button class="tool-btn" id="btn-save-circuit" title="Salva circuito come file JSON">
+      <button class="tool-btn" id="btn-save-circuit" data-help-id="save" title="Salva circuito come file JSON">
         <svg width="14" height="14" viewBox="0 0 14 14">
           <path d="M2 2 h8 l2 2 v8 a1 1 0 0 1-1 1 H3 a1 1 0 0 1-1-1 Z" stroke="currentColor" stroke-width="1.3" fill="none"/>
           <rect x="4" y="2" width="5" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/>
@@ -130,7 +62,7 @@
         </svg>
         Salva
       </button>
-      <button class="tool-btn" id="btn-load-circuit" title="Carica circuito da file JSON">
+      <button class="tool-btn" id="btn-load-circuit" data-help-id="load" title="Carica circuito da file JSON">
         <svg width="14" height="14" viewBox="0 0 14 14">
           <path d="M2 4 h4 l1.5 1.5 H12 v7 a0.5 0.5 0 0 1-.5.5 H2.5 a0.5 0.5 0 0 1-.5-.5 Z" stroke="currentColor" stroke-width="1.3" fill="none"/>
           <line x1="7" y1="7" x2="7" y2="11" stroke="currentColor" stroke-width="1.5"/>
@@ -143,7 +75,7 @@
 
     <div class="toolbar-spacer"></div>
 
-    <button class="simulate-btn" id="btn-simulate">
+    <button class="simulate-btn" id="btn-simulate" data-help-id="simulate">
       <svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13" fill="currentColor"/></svg>
       Simula
     </button>
@@ -152,14 +84,14 @@
       <button class="tool-btn" id="btn-zoom-out" title="Zoom out (rotella mouse)">－</button>
       <button class="tool-btn" id="btn-zoom-fit" title="Adatta alla finestra">⊡</button>
     </div>
-    <button class="tool-btn" id="btn-tool-text" data-tool="text"
+    <button class="tool-btn" id="btn-tool-text" data-tool="text" data-help-id="text"
             title="Inserisci etichetta testo (T)">
       <svg width="14" height="14" viewBox="0 0 14 14">
         <text x="2" y="12" font-size="12" fill="currentColor" font-family="monospace" font-weight="bold">T</text>
       </svg>
       Testo
     </button>
-    <button class="tool-btn" id="btn-show-nodes" title="Mostra/nascondi nodi di misura">
+    <button class="tool-btn" id="btn-show-nodes" data-help-id="nodes" title="Mostra/nascondi nodi di misura">
       <svg width="14" height="14" viewBox="0 0 14 14">
         <circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
         <circle cx="7" cy="7" r="1" fill="currentColor"/>
@@ -170,7 +102,7 @@
       </svg>
       Nodi
     </button>
-    <button class="tool-btn" id="btn-oscilloscope" title="Apri / chiudi oscilloscopio multi-canale">
+    <button class="tool-btn" id="btn-oscilloscope" data-help-id="scope" title="Apri / chiudi oscilloscopio multi-canale">
       <svg width="14" height="14" viewBox="0 0 14 14">
         <rect x="1" y="1" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
         <polyline points="2,7 4,4 6,9 8,3 10,7 12,6" stroke="#58a6ff" stroke-width="1.3" fill="none"/>
@@ -180,7 +112,7 @@
       </svg>
       Scope
     </button>
-    <button class="tool-btn" id="btn-toggle-vt" title="Mostra / nascondi grafico V(t) classico">
+    <button class="tool-btn" id="btn-toggle-vt" data-help-id="chart_vt" title="Mostra / nascondi grafico V(t) classico">
       <svg width="14" height="14" viewBox="0 0 14 14">
         <polyline points="1,11 4,5 7,9 10,3 13,7" stroke="currentColor" stroke-width="1.4" fill="none"/>
         <line x1="1" y1="13" x2="13" y2="13" stroke="currentColor" stroke-width="1.2"/>
@@ -221,6 +153,190 @@
 
   <!-- LEFT SIDEBAR: component info + parameters -->
   <aside class="sidebar-left">
+
+    <!-- ══ PALETTE COMPONENTI ══ -->
+    <div class="sidebar-section comp-palette-section">
+      <div class="section-title">Componenti</div>
+
+      <!-- ─ PASSIVI ─ -->
+      <div class="comp-cat" id="cat-passivi">
+        <div class="comp-cat-header">
+          <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <span>Passivi</span>
+        </div>
+        <div class="comp-cat-body">
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="resistor" data-help-id="resistor" title="Resistenza (R)">
+              <svg class="comp-item-icon" viewBox="0 0 48 20"><line x1="0" y1="10" x2="8" y2="10" stroke="currentColor" stroke-width="1.8"/><path d="M8 10 L10 4 L13 16 L16 4 L19 16 L22 4 L25 16 L27 10" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="27" y1="10" x2="48" y2="10" stroke="currentColor" stroke-width="1.8"/></svg>
+              <span class="comp-item-name">Resistenza</span><span class="comp-item-key">R</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="resistor" aria-label="Parametri resistenza">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="capacitor" data-help-id="capacitor" title="Condensatore (C)">
+              <svg class="comp-item-icon" viewBox="0 0 48 20"><line x1="0" y1="10" x2="19" y2="10" stroke="currentColor" stroke-width="1.8"/><line x1="19" y1="3" x2="19" y2="17" stroke="currentColor" stroke-width="2.5"/><line x1="23" y1="3" x2="23" y2="17" stroke="currentColor" stroke-width="2.5"/><line x1="23" y1="10" x2="48" y2="10" stroke="currentColor" stroke-width="1.8"/></svg>
+              <span class="comp-item-name">Condensatore</span><span class="comp-item-key">C</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="capacitor" aria-label="Parametri condensatore">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="inductor" data-help-id="inductor" title="Induttore (L)">
+              <svg class="comp-item-icon" viewBox="0 0 48 20"><line x1="0" y1="10" x2="6" y2="10" stroke="currentColor" stroke-width="1.8"/><path d="M6,10 A5,5 0 0,1 16,10" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M16,10 A5,5 0 0,1 26,10" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M26,10 A5,5 0 0,1 36,10" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="36" y1="10" x2="48" y2="10" stroke="currentColor" stroke-width="1.8"/></svg>
+              <span class="comp-item-name">Induttore</span><span class="comp-item-key">L</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="inductor" aria-label="Parametri induttore">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="gnd" data-help-id="gnd" title="Massa (G)">
+              <svg class="comp-item-icon" viewBox="0 0 48 20"><line x1="24" y1="2" x2="24" y2="8" stroke="currentColor" stroke-width="1.8"/><line x1="10" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="2.2"/><line x1="14" y1="12" x2="34" y2="12" stroke="currentColor" stroke-width="2.2"/><line x1="18" y1="16" x2="30" y2="16" stroke="currentColor" stroke-width="2.2"/></svg>
+              <span class="comp-item-name">Massa</span><span class="comp-item-key">G</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="gnd" aria-label="Guida massa">?</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─ ATTIVI ─ -->
+      <div class="comp-cat" id="cat-attivi">
+        <div class="comp-cat-header">
+          <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <span>Attivi</span>
+        </div>
+        <div class="comp-cat-body">
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="bjt_npn" data-help-id="bjt_npn" title="BJT NPN (Q)">
+              <svg class="comp-item-icon" viewBox="0 0 48 28"><line x1="0" y1="14" x2="14" y2="14" stroke="currentColor" stroke-width="1.8"/><line x1="14" y1="4" x2="14" y2="24" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><line x1="14" y1="8"  x2="30" y2="2"  stroke="currentColor" stroke-width="1.8"/><line x1="14" y1="20" x2="30" y2="27" stroke="currentColor" stroke-width="1.8"/><polyline points="24,24 30,27 27,21" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+              <span class="comp-item-name">BJT NPN</span><span class="comp-item-key">Q</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="bjt_npn" aria-label="Parametri BJT">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item comp-item-soon" data-tool="opamp" data-help-id="opamp" title="Op-Amp (prossimamente)" disabled>
+              <svg class="comp-item-icon" viewBox="0 0 48 28"><polygon points="8,2 8,26 36,14" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="0" y1="9" x2="8" y2="9" stroke="currentColor" stroke-width="1.8"/><line x1="0" y1="19" x2="8" y2="19" stroke="currentColor" stroke-width="1.8"/><line x1="36" y1="14" x2="48" y2="14" stroke="currentColor" stroke-width="1.8"/><text x="13" y="11" font-size="5" fill="currentColor">+</text><text x="13" y="20" font-size="5" fill="currentColor">−</text></svg>
+              <span class="comp-item-name">Op-Amp</span><span class="comp-item-soon-tag">soon</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="opamp" aria-label="Guida Op-Amp">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item comp-item-soon" data-tool="mosfet_n" data-help-id="mosfet_n" title="MOSFET N-ch (prossimamente)" disabled>
+              <svg class="comp-item-icon" viewBox="0 0 48 28"><line x1="0" y1="14" x2="10" y2="14" stroke="currentColor" stroke-width="1.8"/><line x1="10" y1="6" x2="10" y2="22" stroke="currentColor" stroke-width="2.5"/><line x1="13" y1="6" x2="13" y2="12" stroke="currentColor" stroke-width="2.5"/><line x1="13" y1="16" x2="13" y2="22" stroke="currentColor" stroke-width="2.5"/><line x1="13" y1="9"  x2="22" y2="9"  stroke="currentColor" stroke-width="1.8"/><line x1="13" y1="19" x2="22" y2="19" stroke="currentColor" stroke-width="1.8"/><line x1="22" y1="2"  x2="22" y2="26" stroke="currentColor" stroke-width="1.8"/><line x1="22" y1="2"  x2="34" y2="2"  stroke="currentColor" stroke-width="1.8"/><line x1="22" y1="26" x2="34" y2="26" stroke="currentColor" stroke-width="1.8"/><line x1="34" y1="2"  x2="34" y2="26" stroke="currentColor" stroke-width="1.8"/></svg>
+              <span class="comp-item-name">MOSFET N</span><span class="comp-item-soon-tag">soon</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="mosfet_n" aria-label="Guida MOSFET">?</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─ ALIMENTATORI ─ -->
+      <div class="comp-cat" id="cat-alimentatori">
+        <div class="comp-cat-header">
+          <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <span>Alimentatori</span>
+        </div>
+        <div class="comp-cat-body">
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="vsource" data-help-id="vsource" title="Generatore di tensione (V)">
+              <svg class="comp-item-icon" viewBox="0 0 48 28"><circle cx="24" cy="14" r="10" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="24" y1="4" x2="24" y2="0" stroke="currentColor" stroke-width="1.8"/><line x1="24" y1="24" x2="24" y2="28" stroke="currentColor" stroke-width="1.8"/><text x="24" y="12" text-anchor="middle" font-size="7" fill="currentColor" font-weight="bold">+</text><text x="24" y="21" text-anchor="middle" font-size="7" fill="currentColor">−</text></svg>
+              <span class="comp-item-name">Gen. Tensione</span><span class="comp-item-key">V</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="vsource" aria-label="Parametri generatore">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item comp-item-soon" data-tool="isource" data-help-id="isource" title="Generatore di corrente (prossimamente)" disabled>
+              <svg class="comp-item-icon" viewBox="0 0 48 28"><circle cx="24" cy="14" r="10" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="24" y1="4" x2="24" y2="0" stroke="currentColor" stroke-width="1.8"/><line x1="24" y1="24" x2="24" y2="28" stroke="currentColor" stroke-width="1.8"/><line x1="24" y1="9" x2="24" y2="19" stroke="currentColor" stroke-width="1.8"/><polyline points="21,12 24,8 27,12" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+              <span class="comp-item-name">Gen. Corrente</span><span class="comp-item-soon-tag">soon</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="isource" aria-label="Guida gen. corrente">?</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─ TRASFORMATORI ─ -->
+      <div class="comp-cat" id="cat-trasformatori">
+        <div class="comp-cat-header">
+          <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <span>Trasformatori</span>
+        </div>
+        <div class="comp-cat-body comp-cat-body-empty">
+          <span class="comp-empty-msg">Prossimamente</span>
+        </div>
+      </div>
+
+      <!-- ─ MICROCONTROLLORI ─ -->
+      <div class="comp-cat" id="cat-mcu">
+        <div class="comp-cat-header">
+          <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <span>Microcontrollori</span>
+        </div>
+        <div class="comp-cat-body comp-cat-body-empty">
+          <span class="comp-empty-msg">Prossimamente</span>
+        </div>
+      </div>
+
+      <!-- ─ DIGITALE ─ -->
+      <div class="comp-cat" id="cat-digitale">
+        <div class="comp-cat-header">
+          <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <span>Digitale</span>
+        </div>
+        <div class="comp-cat-body comp-cat-body-empty">
+          <span class="comp-empty-msg">Prossimamente</span>
+        </div>
+      </div>
+
+      <!-- ─ STRUMENTI ─ -->
+      <div class="comp-cat" id="cat-strumenti">
+        <div class="comp-cat-header">
+          <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <span>Strumenti</span>
+        </div>
+        <div class="comp-cat-body">
+          <div class="comp-item-row">
+            <button type="button" class="comp-item comp-tool-item" id="btn-open-calc" data-help-id="calculator" title="Calcolatrice">
+              <svg class="comp-item-icon" viewBox="0 0 48 28">
+                <rect x="6" y="4" width="36" height="20" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/>
+                <line x1="10" y1="9" x2="38" y2="9" stroke="currentColor" stroke-width="1.4"/>
+                <rect x="10" y="13" width="6" height="5" rx="0.5" fill="currentColor" opacity="0.5"/>
+                <rect x="19" y="13" width="6" height="5" rx="0.5" fill="currentColor" opacity="0.5"/>
+                <rect x="28" y="13" width="6" height="5" rx="0.5" fill="currentColor" opacity="0.5"/>
+              </svg>
+              <span class="comp-item-name">Calcolatrice</span>
+            </button>
+          </div>
+          <div class="comp-item-row">
+            <button type="button" class="comp-item comp-tool-item" id="btn-open-cap-conv" data-help-id="cap_converter" title="Conversione condensatori">
+              <svg class="comp-item-icon" viewBox="0 0 48 28">
+                <line x1="0" y1="14" x2="14" y2="14" stroke="currentColor" stroke-width="1.8"/>
+                <line x1="14" y1="5" x2="14" y2="23" stroke="currentColor" stroke-width="2.2"/>
+                <line x1="18" y1="5" x2="18" y2="23" stroke="currentColor" stroke-width="2.2"/>
+                <line x1="18" y1="14" x2="48" y2="14" stroke="currentColor" stroke-width="1.8"/>
+                <text x="28" y="12" font-size="6" fill="currentColor">nF</text>
+              </svg>
+              <span class="comp-item-name">Conv. condensatori</span>
+            </button>
+          </div>
+          <div class="comp-item-row">
+            <button type="button" class="comp-item comp-tool-item" id="btn-open-filter-calc" data-help-id="filter_calc" title="Calcolo filtri">
+              <svg class="comp-item-icon" viewBox="0 0 48 28">
+                <path d="M4 14 L12 14 L16 6 L22 22 L28 10 L34 18 L38 14 L44 14" stroke="currentColor" stroke-width="1.6" fill="none"/>
+              </svg>
+              <span class="comp-item-name">Calcolo filtri</span>
+            </button>
+          </div>
+          <div class="comp-item-row">
+            <button type="button" class="comp-item comp-tool-item" id="btn-open-freq-meter" data-help-id="freq_meter" title="Frequenzimetro">
+              <svg class="comp-item-icon" viewBox="0 0 48 28">
+                <rect x="4" y="6" width="40" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <text x="24" y="18" text-anchor="middle" font-size="8" fill="#58a6ff" font-family="monospace">Hz</text>
+              </svg>
+              <span class="comp-item-name">Frequenzimetro</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.comp-palette-section -->
+
     <div class="sidebar-section">
       <div class="section-title">Componente selezionato</div>
       <div id="comp-editor" class="comp-editor">
@@ -281,6 +397,19 @@
       </div>
     </div>
 
+    <!-- Analisi parametrica collassabile -->
+    <div class="sidebar-section pa-wrapper" data-help-id="param_pa">
+      <div class="section-title pa-toggle-btn" id="pa-toggle" title="Espandi / comprimi">
+        <span>⚙ Parametri circuito</span>
+        <span class="pa-chevron" id="pa-chevron">▶</span>
+      </div>
+      <div id="pa-body" style="display:none">
+        <div id="pa-content" class="pa-content">
+          <div class="pa-empty">Aggiungi componenti al circuito per vedere i parametri.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="sidebar-section">
       <div class="section-title">Netlist JSON</div>
       <div class="netlist-preview" id="netlist-preview">—</div>
@@ -288,24 +417,36 @@
   </aside>
 
   <!-- CENTER: circuit canvas -->
-  <section class="canvas-section">
+  <section class="canvas-section" data-help-id="canvas">
     <canvas id="circuit-canvas"></canvas>
     <div class="canvas-status" id="canvas-status">Pronto — seleziona uno strumento dalla barra in alto</div>
   </section>
 
   <!-- RIGHT SIDEBAR: simulation results -->
   <aside class="sidebar-right">
-    <div class="sidebar-section">
-      <div class="section-title">Bode plot — Ampiezza</div>
-      <div class="chart-wrap">
-        <canvas id="chart-magnitude"></canvas>
+    <div class="sidebar-section" id="bode-magnitude-section" data-help-id="bode_mag">
+      <div class="section-title sidebar-toggle-title" id="bode-mag-toggle">
+        <span>Bode plot — Ampiezza</span>
+        <span class="bode-title-btns">
+          <button class="bode-icon-btn" id="btn-expand-mag" title="Ingrandisci">⤢</button>
+          <span class="sidebar-toggle-chevron open" id="bode-mag-chevron">▾</span>
+        </span>
+      </div>
+      <div id="bode-mag-body">
+        <div class="chart-wrap"><canvas id="chart-magnitude"></canvas></div>
       </div>
     </div>
 
-    <div class="sidebar-section">
-      <div class="section-title">Bode plot — Fase</div>
-      <div class="chart-wrap">
-        <canvas id="chart-phase"></canvas>
+    <div class="sidebar-section" id="bode-phase-section" data-help-id="bode_phase">
+      <div class="section-title sidebar-toggle-title" id="bode-phase-toggle">
+        <span>Bode plot — Fase</span>
+        <span class="bode-title-btns">
+          <button class="bode-icon-btn" id="btn-expand-phase" title="Ingrandisci">⤢</button>
+          <span class="sidebar-toggle-chevron open" id="bode-phase-chevron">▾</span>
+        </span>
+      </div>
+      <div id="bode-phase-body">
+        <div class="chart-wrap"><canvas id="chart-phase"></canvas></div>
       </div>
     </div>
 
@@ -360,12 +501,41 @@
       </div>
       <div class="solver-badge" id="solver-badge"></div>
     </div>
+
+
+  </aside>
+
+  <!-- ════════════ PANNELLO OSSERVAZIONI + GUIDA ════════════ -->
+  <aside id="analyst-panel" data-help-id="analyst">
+    <div class="analyst-panel-header">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <circle cx="5.5" cy="5.5" r="4" stroke="#58a6ff" stroke-width="1.3"/>
+        <line x1="8.5" y1="8.5" x2="12" y2="12" stroke="#58a6ff" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      <span class="analyst-panel-title">Assistente</span>
+    </div>
+
+    <div class="analyst-section analyst-hover-section">
+      <div class="analyst-section-title">Guida contestuale</div>
+      <div id="analyst-hover-title" class="analyst-hover-title">CircuitSim</div>
+      <div id="analyst-hover-text" class="analyst-hover-text">Passa il mouse su componenti, grafici o pulsanti per una spiegazione.</div>
+    </div>
+
+    <div class="analyst-section analyst-obs-section">
+      <div class="analyst-section-title">
+        <span>Osservazioni simulazione</span>
+        <span class="analyst-ctx-badge" id="analyst-ctx-badge"></span>
+      </div>
+      <div id="analyst-content" class="analyst-content">
+        <div class="analyst-empty">Esegui una simulazione o seleziona un grafico per l'analisi automatica.</div>
+      </div>
+    </div>
   </aside>
 
 </div><!-- /.main-top -->
 
-<!-- ── BOTTOM PANEL: V(t) + V(f) sempre visibili ── -->
-<div class="bottom-panel" id="bottom-panel">
+<!-- ── BOTTOM PANEL: V(t) — nascosto di default, V(f) rimosso (sostituito da Bode espanso) ── -->
+<div class="bottom-panel" id="bottom-panel" style="display:none">
 
   <div class="bottom-chart-area" id="vt-panel" style="display:none">
     <div class="bottom-chart-header">
@@ -379,9 +549,9 @@
     </div>
   </div>
 
-  <div class="bottom-divider"></div>
+  <div class="bottom-divider" id="bottom-divider" style="display:none"></div>
 
-  <div class="bottom-chart-area">
+  <div class="bottom-chart-area" id="vf-panel" style="display:none">
     <div class="bottom-chart-header">
       <span class="bottom-chart-title" id="vf-title">V(f) — Risposta in frequenza</span>
       <span class="bottom-badge" id="badge-vf">analitico</span>
@@ -394,8 +564,20 @@
 
 </div><!-- /.bottom-panel -->
 
+<!-- ════════════════ PANNELLO BODE ESPANSO ════════════════ -->
+<div id="bode-expand-panel" style="display:none">
+  <div class="bode-expand-header">
+    <span class="bode-expand-title" id="bode-expand-title">Bode plot</span>
+    <span class="bode-expand-hint">Rotella = zoom · Drag = pan · Doppio-click = reset</span>
+    <button id="btn-bode-expand-close" class="tool-btn" title="Chiudi">✕</button>
+  </div>
+  <div class="bode-expand-body">
+    <canvas id="chart-bode-expand"></canvas>
+  </div>
+</div>
+
 <!-- ═══════════════════════════ OSCILLOSCOPIO MULTI-CANALE ═══════════════════════════ -->
-<div id="oscilloscope-panel" style="display:none">
+<div id="oscilloscope-panel" style="display:none" data-help-id="scope">
   <div class="scope-header">
     <span class="scope-title">
       <svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align:middle;margin-right:6px">
@@ -450,7 +632,251 @@
   <canvas id="scope-canvas" class="scope-canvas"></canvas>
 </div>
 
+
 </main>
+
+<!-- Calcolatrice -->
+<div id="calc-overlay" class="calc-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Calcolatrice">
+  <div class="calc-dialog">
+    <div class="calc-header">
+      <span class="calc-title">Calcolatrice</span>
+      <div class="calc-tabs">
+        <button type="button" class="calc-tab active" data-calc-tab="std">Standard</button>
+        <button type="button" class="calc-tab" data-calc-tab="elec">Elettronica</button>
+      </div>
+      <button type="button" id="calc-close" class="comp-help-close" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="calc-body">
+      <div class="calc-panel active" data-calc-panel="std">
+        <div id="calc-display" class="calc-display">0</div>
+        <div class="calc-grid">
+          <button type="button" data-calc="C" class="calc-key calc-fn">C</button>
+          <button type="button" data-calc="CE" class="calc-key calc-fn">CE</button>
+          <button type="button" data-calc="⌫" class="calc-key calc-fn">⌫</button>
+          <button type="button" data-calc="/" class="calc-key calc-op">÷</button>
+          <button type="button" data-calc="7" class="calc-key">7</button>
+          <button type="button" data-calc="8" class="calc-key">8</button>
+          <button type="button" data-calc="9" class="calc-key">9</button>
+          <button type="button" data-calc="*" class="calc-key calc-op">×</button>
+          <button type="button" data-calc="4" class="calc-key">4</button>
+          <button type="button" data-calc="5" class="calc-key">5</button>
+          <button type="button" data-calc="6" class="calc-key">6</button>
+          <button type="button" data-calc="-" class="calc-key calc-op">−</button>
+          <button type="button" data-calc="1" class="calc-key">1</button>
+          <button type="button" data-calc="2" class="calc-key">2</button>
+          <button type="button" data-calc="3" class="calc-key">3</button>
+          <button type="button" data-calc="+" class="calc-key calc-op">+</button>
+          <button type="button" data-calc="±" class="calc-key calc-fn">±</button>
+          <button type="button" data-calc="0" class="calc-key">0</button>
+          <button type="button" data-calc="." class="calc-key">.</button>
+          <button type="button" data-calc="=" class="calc-key calc-eq">=</button>
+        </div>
+      </div>
+      <div class="calc-panel" data-calc-panel="elec">
+        <div class="calc-elec-block">
+          <div class="calc-elec-label">Filtro RC — fc e τ</div>
+          <div class="calc-elec-row">
+            <label>R <span class="calc-unit">Ω</span></label>
+            <input type="number" id="calc-rc-r" class="calc-elec-in" value="10000" step="any"/>
+            <label>C <span class="calc-unit">F</span></label>
+            <input type="number" id="calc-rc-c" class="calc-elec-in" value="4.7e-8" step="any"/>
+          </div>
+          <button type="button" id="calc-fc-rc" class="calc-elec-btn">Calcola fc</button>
+          <button type="button" id="calc-tau-rc" class="calc-elec-btn">Calcola τ</button>
+          <div id="calc-fc-rc-out" class="calc-elec-out">—</div>
+          <div id="calc-tau-rc-out" class="calc-elec-out">—</div>
+        </div>
+        <div class="calc-elec-block">
+          <div class="calc-elec-label">dB ↔ rapporto</div>
+          <div class="calc-elec-row">
+            <label>dB</label>
+            <input type="number" id="calc-db-in" class="calc-elec-in" value="-3" step="any"/>
+            <button type="button" id="calc-db" class="calc-elec-btn">→ rapporto</button>
+          </div>
+          <div id="calc-db-out" class="calc-elec-out">—</div>
+          <div class="calc-elec-row">
+            <label>Rapporto</label>
+            <input type="number" id="calc-ratio-in" class="calc-elec-in" value="0.707" step="any"/>
+            <button type="button" id="calc-ratio-db" class="calc-elec-btn">→ dB</button>
+          </div>
+          <div id="calc-ratio-db-out" class="calc-elec-out">—</div>
+        </div>
+        <div class="calc-elec-block">
+          <div class="calc-elec-label">Reattanze e resistenze</div>
+          <div class="calc-elec-row">
+            <label>f <span class="calc-unit">Hz</span></label>
+            <input type="number" id="calc-xl-f" class="calc-elec-in" value="1000"/>
+            <label>L <span class="calc-unit">H</span></label>
+            <input type="number" id="calc-xl-l" class="calc-elec-in" value="0.001"/>
+            <button type="button" id="calc-xl" class="calc-elec-btn">XL</button>
+          </div>
+          <div id="calc-xl-out" class="calc-elec-out">—</div>
+          <div class="calc-elec-row">
+            <label>f <span class="calc-unit">Hz</span></label>
+            <input type="number" id="calc-xc-f" class="calc-elec-in" value="338"/>
+            <label>C <span class="calc-unit">F</span></label>
+            <input type="number" id="calc-xc-c" class="calc-elec-in" value="4.7e-8"/>
+            <button type="button" id="calc-xc" class="calc-elec-btn">Xc</button>
+          </div>
+          <div id="calc-xc-out" class="calc-elec-out">—</div>
+          <div class="calc-elec-row">
+            <label>R1 Ω</label>
+            <input type="number" id="calc-r1" class="calc-elec-in" value="10000"/>
+            <label>R2 Ω</label>
+            <input type="number" id="calc-r2" class="calc-elec-in" value="10000"/>
+            <button type="button" id="calc-r-par" class="calc-elec-btn">R par</button>
+          </div>
+          <div id="calc-r-par-out" class="calc-elec-out">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Conversione condensatori -->
+<div id="cap-conv-overlay" class="calc-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="calc-dialog tool-dialog-wide">
+    <div class="calc-header">
+      <span class="calc-title">Conversione condensatori</span>
+      <button type="button" id="cap-conv-close" class="comp-help-close" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="calc-body">
+      <div class="calc-elec-block">
+        <div class="calc-elec-label">Converti valore</div>
+        <div class="calc-elec-row">
+          <input type="number" id="cap-from-val" class="calc-elec-in" value="47" step="any"/>
+          <select id="cap-from-unit" class="calc-elec-in" style="width:64px">
+            <option value="pF">pF</option>
+            <option value="nF" selected>nF</option>
+            <option value="uF">µF</option>
+            <option value="mF">mF</option>
+            <option value="F">F</option>
+          </select>
+          <button type="button" id="cap-conv-convert" class="calc-elec-btn">Converti</button>
+        </div>
+        <div id="cap-conv-all" class="cap-chips-wrap"></div>
+      </div>
+      <div class="calc-elec-block">
+        <div class="calc-elec-label">Valori normalizzati E12 (ricerca componente)</div>
+        <div id="cap-conv-std" class="cap-std-list"></div>
+      </div>
+      <div class="calc-elec-block">
+        <div class="calc-elec-label">C da fc e R (filtro RC)</div>
+        <div class="calc-elec-row">
+          <label>fc <span class="calc-unit">Hz</span></label>
+          <input type="number" id="cap-search-fc" class="calc-elec-in" value="338"/>
+          <label>R <span class="calc-unit">Ω</span></label>
+          <input type="number" id="cap-search-r" class="calc-elec-in" value="10000"/>
+          <button type="button" id="cap-search-btn" class="calc-elec-btn">Cerca C</button>
+        </div>
+        <div id="cap-search-out" class="calc-elec-out">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Calcolo filtri -->
+<div id="filter-calc-overlay" class="calc-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="calc-dialog tool-dialog-wide">
+    <div class="calc-header">
+      <span class="calc-title">Calcolo filtri</span>
+      <button type="button" id="filter-calc-close" class="comp-help-close" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="calc-body">
+      <div class="calc-elec-row" style="flex-direction:column;align-items:stretch">
+        <label>Tipo / funzione</label>
+        <select id="filter-type" class="calc-elec-in" style="width:100%">
+          <option value="lp_rc">Passa-basso RC</option>
+          <option value="hp_rc">Passa-alto RC</option>
+          <option value="lp_rl">Passa-basso RL</option>
+          <option value="hp_rl">Passa-alto RL</option>
+          <option value="rlc_bp">Passa-banda RLC (serie)</option>
+        </select>
+        <p id="filter-type-desc" class="tool-note" style="margin-top:6px"></p>
+      </div>
+      <div class="calc-elec-block">
+        <div class="calc-elec-label">Parametri (compila almeno 2)</div>
+        <div class="calc-elec-row">
+          <label>fc <span class="calc-unit">Hz</span></label>
+          <input type="number" id="filter-fc" class="calc-elec-in" value="338" step="any"/>
+        </div>
+        <div class="calc-elec-row">
+          <label>R <span class="calc-unit">Ω</span></label>
+          <input type="number" id="filter-r" class="calc-elec-in" value="10000" step="any"/>
+        </div>
+        <div class="calc-elec-row" id="filter-row-c">
+          <label>C <span class="calc-unit">F</span></label>
+          <input type="number" id="filter-c" class="calc-elec-in" placeholder="auto" step="any"/>
+        </div>
+        <div class="calc-elec-row" id="filter-row-l" style="display:none">
+          <label>L <span class="calc-unit">H</span></label>
+          <input type="number" id="filter-l" class="calc-elec-in" placeholder="auto" step="any"/>
+        </div>
+        <button type="button" id="filter-solve" class="calc-elec-btn" style="margin-top:8px;width:100%">Calcola parametri</button>
+      </div>
+      <div id="filter-calc-out" class="tool-calc-result">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- Frequenzimetro -->
+<div id="freq-meter-overlay" class="calc-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="calc-dialog tool-dialog-wide">
+    <div class="calc-header">
+      <span class="calc-title">Frequenzimetro</span>
+      <button type="button" id="freq-meter-close" class="comp-help-close" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="calc-body">
+      <div class="calc-elec-block">
+        <div class="calc-elec-label">Da periodo T</div>
+        <div class="calc-elec-row">
+          <label>T</label>
+          <input type="number" id="freq-period" class="calc-elec-in" value="2.95" step="any"/>
+          <select id="freq-period-unit" class="calc-elec-in" style="width:56px">
+            <option value="s">s</option>
+            <option value="ms" selected>ms</option>
+            <option value="us">µs</option>
+            <option value="ns">ns</option>
+          </select>
+          <button type="button" id="freq-period-btn" class="calc-elec-btn">f = 1/T</button>
+        </div>
+        <div id="freq-from-period" class="calc-elec-out">—</div>
+      </div>
+      <div class="calc-elec-block">
+        <div class="calc-elec-label">Conta-cicli (N cicli in Δt)</div>
+        <div class="calc-elec-row">
+          <label>N</label>
+          <input type="number" id="freq-cycles" class="calc-elec-in" value="10" step="1"/>
+          <label>Δt</label>
+          <input type="number" id="freq-window" class="calc-elec-in" value="10"/>
+          <select id="freq-window-unit" class="calc-elec-in" style="width:56px">
+            <option value="s">s</option>
+            <option value="ms" selected>ms</option>
+            <option value="us">µs</option>
+          </select>
+          <button type="button" id="freq-count-btn" class="calc-elec-btn">f = N/Δt</button>
+        </div>
+        <div id="freq-from-count" class="calc-elec-out">—</div>
+      </div>
+      <div class="calc-elec-block">
+        <div class="calc-elec-label">Da ultima simulazione</div>
+        <button type="button" id="freq-sim-btn" class="calc-elec-btn" style="width:100%">Aggiorna da simulazione</button>
+        <div id="freq-from-sim" class="calc-elec-out" style="margin-top:8px">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Popup help parametri componente -->
+<div id="comp-help-overlay" class="comp-help-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="comp-help-dialog">
+    <div class="comp-help-dialog-header">
+      <h3 id="comp-help-title" class="comp-help-dialog-title">Componente</h3>
+      <button type="button" id="comp-help-close" class="comp-help-close" aria-label="Chiudi">✕</button>
+    </div>
+    <div id="comp-help-body" class="comp-help-dialog-body"></div>
+  </div>
+</div>
 
 <!-- Editor inline per etichette testo e nomi componenti -->
 <div id="inline-editor-wrap" style="display:none;position:fixed;z-index:9999">
@@ -463,6 +889,11 @@
 <script src="{% static 'js/current-animator.js' %}"></script>
 <script src="{% static 'js/bode-plot.js' %}"></script>
 <script src="{% static 'js/oscilloscope.js' %}"></script>
+<script src="{% static 'js/param-analyzer.js' %}"></script>
+<script src="{% static 'js/sim-analyst.js' %}"></script>
+<script src="{% static 'js/comp-help.js' %}"></script>
+<script src="{% static 'js/calculator.js' %}"></script>
+<script src="{% static 'js/tools.js' %}"></script>
 <script src="{% static 'js/app.js' %}"></script>
 </body>
 </html>
