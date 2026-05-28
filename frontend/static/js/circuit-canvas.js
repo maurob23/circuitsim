@@ -30,77 +30,33 @@ function _fmtV(v) {
 
 // ─── Component catalogue ────────────────────────────────────────────────────
 
-const COMP_DEFS = {
-  resistor: {
-    label: 'Resistenza',
-    terminals: [
-      { id: 'a', lx: 0,  ly: 0 },
-      { id: 'b', lx: 80, ly: 0 },
-    ],
-    defaultValue: 10_000,
-    unit: 'Ω',
-    netlistType: 'resistor',
-  },
-  capacitor: {
-    label: 'Condensatore',
-    terminals: [
-      { id: 'a', lx: 0,  ly: 0 },
-      { id: 'b', lx: 80, ly: 0 },
-    ],
-    defaultValue: 47e-9,
-    unit: 'F',
-    netlistType: 'capacitor',
-  },
-  vsource: {
-    label: 'Generatore V',
-    terminals: [
-      { id: 'pos', lx: 0,  ly: 0 },   // + terminal
-      { id: 'neg', lx: 80, ly: 0 },   // − terminal
-    ],
-    defaultValue: 1,
-    unit: 'V',
-    netlistType: 'voltage_source',
-  },
-  gnd: {
-    label: 'Massa',
-    terminals: [
-      { id: 'g', lx: 0, ly: 0 },
-    ],
-    defaultValue: null,
-    unit: '',
-    netlistType: null,   // GND is not a netlist component — it labels a node
-  },
+if (!window.CIRCUIT_COMPONENT_REGISTRY) {
+  throw new Error('CircuitSim component registry not loaded');
+}
 
-  inductor: {
-    label: 'Induttore',
-    terminals: [
-      { id: 'a', lx:  0, ly: 0 },
-      { id: 'b', lx: 80, ly: 0 },
-    ],
-    defaultValue: 1e-3,   // 1 mH
-    unit: 'H',
-    netlistType: 'inductor',
-  },
-
-  // BJT NPN — terminali: b=Base (origine), c=Collettore, e=Emettitore
-  // Layout: B a sinistra (0,0), C in alto a destra (40,-40), E in basso a destra (40,40)
-  bjt_npn: {
-    label: 'BJT NPN',
-    terminals: [
-      { id: 'b', lx:  0, ly:  0  },   // Base   (origine)
-      { id: 'c', lx: 40, ly: -40 },   // Collettore
-      { id: 'e', lx: 40, ly:  40 },   // Emettitore
-    ],
-    defaultValue: 100,   // β (hFE)
-    unit: 'β',
-    netlistType: 'bjt_npn',
-  },
-};
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
 function snapGrid(v, g) {
   return Math.round(v / g) * g;
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function isLedType(type) {
+  return type?.startsWith?.('led_');
+}
+
+function ledColor(type) {
+  return {
+    led_red: '#ff5c5c',
+    led_green: '#3fb950',
+    led_yellow: '#e3b341',
+    led_blue: '#58a6ff',
+    led_white: '#f4f6f8',
+  }[type] || '#ff5c5c';
 }
 
 /** Rotate local offset (lx, ly) by `deg` degrees CCW, return {dx, dy} in canvas space. */
@@ -116,7 +72,7 @@ function rotateOffset(lx, ly, deg) {
 
 function formatValue(value, type) {
   if (value === null || value === undefined) return '';
-  if (type === 'resistor') {
+  if (type === 'resistor' || type === 'potentiometer') {
     if (value >= 1e6)  return `${+(value / 1e6).toPrecision(4)} MΩ`;
     if (value >= 1e3)  return `${+(value / 1e3).toPrecision(4)} kΩ`;
     return `${+value.toPrecision(4)} Ω`;
@@ -128,6 +84,7 @@ function formatValue(value, type) {
     return `${+(value / 1e-12).toPrecision(4)} pF`;
   }
   if (type === 'vsource')  return `${+value.toPrecision(4)} V`;
+  if (isLedType(type)) return `Vf=${+value.toPrecision(3)} V`;
   if (type === 'bjt_npn') return `β=${+value}`;
   if (type === 'inductor') {
     if (value >= 1)      return `${+(value).toPrecision(4)} H`;
@@ -260,7 +217,7 @@ class CircuitCanvas {
     this.render();
     this._updateCursor();
     // Notifica il resto dell'app (palette, toolbar) del cambio tool
-    this.canvas.dispatchEvent(new CustomEvent('toolchange', { detail: tool, bubbles: true }));
+    this.el.dispatchEvent(new CustomEvent('toolchange', { detail: tool, bubbles: true }));
   }
 
   clearAll() {
@@ -342,18 +299,32 @@ class CircuitCanvas {
 
   _makeComp(type, x, y, rotation, value) {
     const n      = this._nextId++;
-    const prefix = { resistor: 'R', capacitor: 'C', vsource: 'V', gnd: 'GND',
-                     inductor: 'L', bjt_npn: 'Q' }[type] ?? type[0].toUpperCase();
+    const prefix = window.CIRCUIT_COMPONENT_REGISTRY[type]?.prefix ?? type[0].toUpperCase();
     const label  = type === 'gnd' ? 'GND' : `${prefix}${n}`;
     const comp   = { id: `${type}_${n}`, label, type, x, y, rotation: rotation || 0, value };
     if (type === 'bjt_npn') comp.ic_q_ma = 1.0;   // IC quiescente default 1 mA
+    if (type === 'vsource') {
+      comp.signal = 'dc';
+      comp.dc = value ?? 1;
+      comp.amplitude = 1;
+      comp.frequency = 1000;
+      comp.offset = 0;
+      comp.phase = 0;
+      comp.step_initial = 0;
+      comp.step_final = value ?? 1;
+      comp.step_time = 0;
+      comp.ac_amplitude = 1;
+    }
+    if (type === 'potentiometer') comp.wiper = 0.5;
+    if (type === 'switch_spst') comp.closed = false;
+    if (isLedType(type)) comp.series_r = 10;
     return comp;
   }
 
   // ── Terminal geometry ─────────────────────────────────────────────────────
 
   getTerminals(comp) {
-    const def = COMP_DEFS[comp.type];
+    const def = window.CIRCUIT_COMPONENT_REGISTRY[comp.type];
     const rot = comp.rotation || 0;
     return def.terminals.map((t) => {
       const { dx, dy } = rotateOffset(t.lx, t.ly, rot);
@@ -555,9 +526,54 @@ class CircuitCanvas {
     const netComps = [];
     for (const comp of this.components) {
       if (comp.type === 'gnd') continue;
-      const def = COMP_DEFS[comp.type];
+      const def = window.CIRCUIT_COMPONENT_REGISTRY[comp.type];
       const terms = this.getTerminals(comp);
       const nodes = terms.map((t) => nodeNames[uf.find(key(t))]);
+
+      if (comp.type === 'potentiometer') {
+        const total = Math.max(Number(comp.value) || 0, 1e-9);
+        const wiper = clamp(Number(comp.wiper ?? 0.5), 0.001, 0.999);
+        netComps.push({
+          id: `${comp.id}_a`,
+          type: 'resistor',
+          value: total * wiper,
+          nodes: [nodes[0], nodes[1]],
+        });
+        netComps.push({
+          id: `${comp.id}_b`,
+          type: 'resistor',
+          value: total * (1 - wiper),
+          nodes: [nodes[1], nodes[2]],
+        });
+        continue;
+      }
+
+      if (comp.type === 'switch_spst') {
+        netComps.push({
+          id: comp.id,
+          type: 'resistor',
+          value: comp.closed ? 1e-3 : 1e12,
+          nodes,
+        });
+        continue;
+      }
+
+      if (isLedType(comp.type)) {
+        const internalNode = `${comp.id}_int`;
+        netComps.push({
+          id: `${comp.id}_vf`,
+          type: 'voltage_source',
+          value: Math.max(Number(comp.value) || 0, 0),
+          nodes: [nodes[0], internalNode],
+        });
+        netComps.push({
+          id: `${comp.id}_rs`,
+          type: 'resistor',
+          value: Math.max(Number(comp.series_r ?? 10) || 10, 1e-6),
+          nodes: [internalNode, nodes[1]],
+        });
+        continue;
+      }
 
       const entry = {
         id: comp.id,
@@ -565,6 +581,18 @@ class CircuitCanvas {
         value: comp.value,
         nodes,
       };
+      if (comp.type === 'vsource') {
+        entry.signal = comp.signal || 'dc';
+        entry.dc = Number(comp.dc ?? comp.value ?? 0);
+        entry.amplitude = Number(comp.amplitude ?? comp.value ?? 1);
+        entry.frequency = Number(comp.frequency ?? 1000);
+        entry.offset = Number(comp.offset ?? 0);
+        entry.phase = Number(comp.phase ?? 0);
+        entry.step_initial = Number(comp.step_initial ?? 0);
+        entry.step_final = Number(comp.step_final ?? comp.value ?? 1);
+        entry.step_time = Number(comp.step_time ?? 0);
+        entry.ac_amplitude = Number(comp.ac_amplitude ?? comp.amplitude ?? comp.value ?? 1);
+      }
       if (comp.type === 'bjt_npn') entry.ic_q_ma = comp.ic_q_ma ?? 1.0;
       netComps.push(entry);
     }
@@ -1036,13 +1064,13 @@ class CircuitCanvas {
 
       default:
         // Placement tool
-        if (COMP_DEFS[this.tool]) {
-          const comp = this._makeComp(this.tool, gx, gy, 0, COMP_DEFS[this.tool].defaultValue);
+        if (window.CIRCUIT_COMPONENT_REGISTRY[this.tool]) {
+          const comp = this._makeComp(this.tool, gx, gy, 0, window.CIRCUIT_COMPONENT_REGISTRY[this.tool].defaultValue);
           this.components.push(comp);
           this._setCompSelection([comp], comp);
           this._emitChange();
           this.setTool('select');
-          this._setStatus(`${COMP_DEFS[this.tool].label} aggiunto`);
+          this._setStatus(`${window.CIRCUIT_COMPONENT_REGISTRY[this.tool].label} aggiunto`);
         }
         break;
     }
@@ -1174,6 +1202,8 @@ class CircuitCanvas {
       case 's': case 'S': this.setTool('select');    break;
       case 'w': case 'W': this.setTool('wire');      break;
       case 'r': case 'R': this.setTool('resistor');  break;
+      case 'p': case 'P': this.setTool('potentiometer'); break;
+      case 'x': case 'X': this.setTool('switch_spst'); break;
       case 'c': case 'C': this.setTool('capacitor'); break;
       case 'v': case 'V': this.setTool('vsource');   break;
       case 'g': case 'G': this.setTool('gnd');       break;
@@ -1477,11 +1507,18 @@ class CircuitCanvas {
 
     switch (comp.type) {
       case 'resistor':   this._drawResistor(ctx);  break;
+      case 'potentiometer': this._drawPotentiometer(ctx); break;
+      case 'switch_spst': this._drawSwitch(ctx, comp); break;
       case 'capacitor':  this._drawCapacitor(ctx); break;
       case 'vsource':    this._drawVSource(ctx);    break;
       case 'gnd':        this._drawGnd(ctx);        break;
       case 'inductor':   this._drawInductor(ctx);   break;
       case 'bjt_npn':    this._drawBJT(ctx, false); break;
+      case 'led_red':
+      case 'led_green':
+      case 'led_yellow':
+      case 'led_blue':
+      case 'led_white':  this._drawLed(ctx, comp);  break;
     }
 
     ctx.restore();
@@ -1533,6 +1570,41 @@ class CircuitCanvas {
     ctx.beginPath();
     ctx.moveTo(bodyEnd, 0);
     ctx.lineTo(80, 0);
+    ctx.stroke();
+  }
+
+  _drawPotentiometer(ctx) {
+    this._drawResistor(ctx);
+
+    ctx.beginPath();
+    ctx.moveTo(40, -34);
+    ctx.lineTo(40, -12);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(35, -17);
+    ctx.lineTo(40, -10);
+    ctx.lineTo(45, -17);
+    ctx.stroke();
+  }
+
+  _drawSwitch(ctx, comp) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(18, 0);
+    ctx.moveTo(62, 0);
+    ctx.lineTo(80, 0);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(20, 0, 3, 0, Math.PI * 2);
+    ctx.arc(60, 0, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(23, 0);
+    if (comp.closed) ctx.lineTo(57, 0);
+    else ctx.lineTo(54, -16);
     ctx.stroke();
   }
 
@@ -1597,6 +1669,46 @@ class CircuitCanvas {
     ctx.stroke();
 
     ctx.lineWidth = 2;
+  }
+
+  _drawLed(ctx, comp) {
+    const color = ledColor(comp.type);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(16, 0);
+    ctx.moveTo(31, 0);
+    ctx.lineTo(80, 0);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(16, -12);
+    ctx.lineTo(16, 12);
+    ctx.lineTo(31, 0);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(31, -12);
+    ctx.lineTo(31, 12);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(26, -17);
+    ctx.lineTo(36, -27);
+    ctx.moveTo(34, -27);
+    ctx.lineTo(36, -27);
+    ctx.lineTo(36, -25);
+    ctx.moveTo(34, -12);
+    ctx.lineTo(44, -22);
+    ctx.moveTo(42, -22);
+    ctx.lineTo(44, -22);
+    ctx.lineTo(44, -20);
+    ctx.stroke();
+    ctx.restore();
   }
 
   _drawGnd(ctx) {

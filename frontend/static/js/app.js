@@ -9,6 +9,10 @@
 
 'use strict';
 
+if (!window.CIRCUIT_COMPONENT_REGISTRY) {
+  throw new Error('CircuitSim component registry not loaded');
+}
+
 // ─── Palette colori nodi ─────────────────────────────────────────────────────
 // Ogni nodo elettrico ha un colore fisso usato SIA sul canvas SIA nei grafici.
 const NODE_COLORS = {
@@ -176,7 +180,6 @@ function _initLayoutControls() {
     _saveLayoutPrefs();
     _applyLayout();
     document.getElementById('sec-analisi')?.classList.remove('collapsed');
-    document.getElementById('sec-param-rapidi')?.classList.remove('collapsed');
   });
 }
 
@@ -285,7 +288,7 @@ contextHelp.bind();
 contextHelp.reset();
 
 document.querySelectorAll('.comp-help-btn[data-help]').forEach(btn => {
-  btn.addEventListener('click', e => {
+  btn.addEventListener('click', async e => {
     e.stopPropagation();
     e.preventDefault();
     compHelpModal.open(btn.dataset.help);
@@ -300,9 +303,11 @@ document.getElementById('btn-open-calc')?.addEventListener('click', () => calcul
 const capConverter = new CapConverterTool();
 const filterCalc   = new FilterCalcTool();
 const freqMeter    = new FreqMeterTool();
+const translator   = new TranslatorTool();
 document.getElementById('btn-open-cap-conv')?.addEventListener('click', () => capConverter.open());
 document.getElementById('btn-open-filter-calc')?.addEventListener('click', () => filterCalc.open());
 document.getElementById('btn-open-freq-meter')?.addEventListener('click', () => freqMeter.open());
+document.getElementById('btn-open-translator')?.addEventListener('click', () => translator.open());
 
 window.circuitSimGetMetrics = () => _lastSimState?.metrics ?? null;
 window.circuitSimGetAnalysisType = () => _lastSimState?.analysisType ?? null;
@@ -414,9 +419,11 @@ const _vtPanel     = document.getElementById('vt-panel');
 const _bottomPanel = document.getElementById('bottom-panel');
 const _btnTogVt    = document.getElementById('btn-toggle-vt');
 let   _vtVisible   = false;
-_btnTogVt.style.opacity = '0.4';
-_btnTogVt.title = 'Mostra grafico V(t)';
-_btnTogVt.addEventListener('click', () => {
+if (_btnTogVt) {
+  _btnTogVt.style.opacity = '0.4';
+  _btnTogVt.title = 'Mostra grafico V(t)';
+}
+_btnTogVt?.addEventListener('click', () => {
   _vtVisible = !_vtVisible;
   _vtPanel.style.display     = _vtVisible ? '' : 'none';
   _bottomPanel.style.display = _vtVisible ? '' : 'none';
@@ -540,6 +547,12 @@ function bottomOpts(xOpts, yOpts) {
 }
 
 function initBottomCharts() {
+  const T = window.CHART_THEME || {
+    tick: '#e6edf3', axisTitle: '#f4f6f8', legend: '#d8dee4',
+    grid: '#2d3a52', border: '#484f58', font: 'JetBrains Mono, monospace',
+    tickSize: 10, titleSize: 11,
+  };
+
   vtChart = new Chart(document.getElementById('chart-vt'), {
     type: 'scatter',
     data: { datasets: [] },
@@ -703,25 +716,103 @@ function setBadge(id, text, isMna) {
 
 // ─── Palette componenti — accordion toggle ────────────────────────────────────
 
+function _isManualButtonEvent(e) {
+  return e.target?.closest?.('.comp-cat-manual-btn')
+    || e.composedPath?.().some(el => el?.classList?.contains?.('comp-cat-manual-btn'));
+}
+
 document.querySelectorAll('.comp-cat-header').forEach(header => {
-  header.addEventListener('click', () => {
-    header.closest('.comp-cat').classList.toggle('open');
+  header.addEventListener('click', e => {
+    if (_isManualButtonEvent(e)) return;
+    header.closest('.comp-cat')?.classList.toggle('open');
+  });
+  header.querySelector('.comp-cat-chevron')?.addEventListener('click', e => {
+    e.stopPropagation();
+    header.closest('.comp-cat')?.classList.toggle('open');
+  });
+  header.querySelector('.comp-cat-title')?.addEventListener('click', e => {
+    e.stopPropagation();
+    header.closest('.comp-cat')?.classList.toggle('open');
   });
 });
+
+function _syncPaletteWithRegistry() {
+  document.querySelectorAll('.comp-item[data-tool]').forEach(btn => {
+    const spec = window.CIRCUIT_COMPONENT_REGISTRY[btn.dataset.tool];
+    if (!spec) return;
+    const label = btn.querySelector('.comp-item-name');
+    if (label) label.textContent = spec.label;
+  });
+}
+
+function _initManualLinks() {
+  const manuals = window.CIRCUIT_MANUAL_REGISTRY || {};
+  const stopManualEvent = e => {
+    if (!_isManualButtonEvent(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  ['pointerdown', 'mousedown', 'mouseup', 'dblclick'].forEach(eventName => {
+    document.addEventListener(eventName, stopManualEvent, true);
+  });
+
+  document.addEventListener('click', async e => {
+    const btn = e.target?.closest?.('.comp-cat-manual-btn[data-manual-topic]');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    const manual = manuals[btn.dataset.manualTopic];
+    if (!manual?.url) {
+      setStatus('Manuale non configurato per questa sezione', 'warn');
+      return;
+    }
+
+    try {
+      const resp = await fetch('/api/manual/open/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: btn.dataset.manualTopic }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        window.open(manual.url, '_blank', 'noopener');
+        setStatus(data.error || 'Apro il manuale nel browser', 'warn');
+        return;
+      }
+      setStatus(`Manuale aperto: ${manual.title}`, 'ok');
+    } catch (_err) {
+      window.open(manual.url, '_blank', 'noopener');
+      setStatus('Backend non raggiungibile: apro il manuale nel browser', 'warn');
+    }
+  }, true);
+
+  document.querySelectorAll('.comp-cat-manual-btn[data-manual-topic]').forEach(btn => {
+    btn.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      e.stopPropagation();
+      btn.click();
+    });
+  });
+}
+
+_syncPaletteWithRegistry();
+_initManualLinks();
 
 // ─── Attivazione tool (toolbar + palette) ─────────────────────────────────────
 
 const TOOL_MSGS = {
-  select:    'Seleziona / trascina — E per ruotare',
-  wire:      'Filo — clicca nodo iniziale poi nodo finale',
-  delete:    'Elimina — clicca su un componente o filo',
-  resistor:  'Resistenza — clicca sulla canvas per piazzare (R)',
-  capacitor: 'Condensatore — clicca per piazzare (C)',
-  inductor:  'Induttore — clicca per piazzare (L)',
-  gnd:       'Massa — clicca per piazzare il riferimento (G)',
-  vsource:   'Generatore di tensione — clicca per piazzare (V)',
-  bjt_npn:   'BJT NPN — clicca per piazzare il transistore (Q)',
-  text:      'Testo — clicca sulla canvas per inserire un\'etichetta (T)',
+  select: 'Seleziona / trascina: E per ruotare',
+  wire:   'Filo: clicca nodo iniziale poi nodo finale',
+  delete: 'Elimina: clicca su un componente o filo',
+  text:   'Testo: clicca sulla canvas per inserire un\'etichetta (T)',
+  ...Object.fromEntries(
+    Object.entries(window.CIRCUIT_COMPONENT_REGISTRY).map(([type, spec]) => [type, spec.toolMessage || spec.label])
+  ),
 };
 
 function _activateTool(tool, btn) {
@@ -742,7 +833,7 @@ document.getElementById('toolbar').addEventListener('click', e => {
 
 // ─── Palette componenti — selezione item ──────────────────────────────────────
 
-document.querySelector('.comp-palette-section').addEventListener('click', e => {
+document.querySelector('.comp-palette-section')?.addEventListener('click', e => {
   if (e.target.closest('.comp-help-btn')) return;
   const btn = e.target.closest('.comp-item[data-tool]');
   if (!btn || btn.disabled) return;
@@ -939,35 +1030,7 @@ document.getElementById('btn-rotate').addEventListener('click', () => {
   canvas.rotateSelected();
 });
 
-// ─── Slider R / C ─────────────────────────────────────────────────────────────
-
-const sliderR = document.getElementById('slider-r');
-const sliderC = document.getElementById('slider-c');
-const valR    = document.getElementById('val-r');
-const valC    = document.getElementById('val-c');
-
-function getRValue() { return Math.pow(10, parseFloat(sliderR.value)); }
-function getCValue() { return Math.pow(10, parseFloat(sliderC.value)); }
-
-function updateSliderDisplays() {
-  valR.textContent = fmt(getRValue(), 'R');
-  valC.textContent = fmt(getCValue(), 'C');
-}
-
-function fmt(v, t) {
-  if (t === 'R') {
-    if (v >= 1e6) return `${+(v/1e6).toPrecision(3)} MΩ`;
-    if (v >= 1e3) return `${+(v/1e3).toPrecision(3)} kΩ`;
-    return `${+v.toPrecision(3)} Ω`;
-  }
-  if (t === 'C') {
-    if (v >= 1e-3) return `${+(v/1e-3).toPrecision(3)} mF`;
-    if (v >= 1e-6) return `${+(v/1e-6).toPrecision(3)} µF`;
-    if (v >= 1e-9) return `${+(v/1e-9).toPrecision(3)} nF`;
-    return `${+(v/1e-12).toPrecision(3)} pF`;
-  }
-  return String(v);
-}
+// Analitica RC contestuale
 
 let _raf = null;
 function scheduleAnalytical() {
@@ -975,66 +1038,54 @@ function scheduleAnalytical() {
   _raf = requestAnimationFrame(updateAnalyticalFromSliders);
 }
 
+function getQuickParamProfile() {
+  const resistors = canvas.components.filter(c => c.type === 'resistor');
+  const capacitors = canvas.components.filter(c => c.type === 'capacitor');
+  if (resistors.length === 1 && capacitors.length === 1) {
+    return { resistor: resistors[0], capacitor: capacitors[0] };
+  }
+  return null;
+}
+
+function getRcValuesFromCircuit() {
+  const profile = getQuickParamProfile();
+  if (!profile) return null;
+  return {
+    R: profile.resistor.value || 10_000,
+    C: profile.capacitor.value || 47e-9,
+    profile,
+  };
+}
+
 function updateAnalyticalFromSliders() {
-  const R    = getRValue();
-  const C    = getCValue();
+  const rc = getRcValuesFromCircuit();
+  if (!rc) {
+    updateNetlistPreview();
+    return;
+  }
+
+  const { R, C } = rc;
   const type = getSelectedAnalysis();
   const fStart = parseFloat(document.getElementById('freq-start').value) || 10;
   const fStop  = parseFloat(document.getElementById('freq-stop').value)  || 100_000;
 
-  // Pannello destro
   if (type === 'ac') {
     bode.updateAnalytical(R, C, fStart, fStop);
     updateMetricsAnalytical(R, C);
   } else if (type === 'transient') {
     transient.updateAnalytical(R, C);
     updateMetricsTransient(R, C);
-  } else if (type === 'sinusoidal') {
-    const freq    = getSineFreq();
-    const amp     = getSineAmp();
-    const periods = getSinePeriods();
-    updateVtSine(R, C, freq, amp, periods);
   }
 
-  // Bottom V(f) — sempre aggiornato
   updateVfAnalytical(R, C, fStart, fStop);
-
-  // Bottom V(t) — dipende dal tipo
   if (type === 'transient') updateVtStep(R, C);
-  else if (type === 'ac')   updateVtStep(R, C);  // mostra step anche in modalità AC
+  else if (type === 'ac')   updateVtStep(R, C);
 
-  syncCanvasToSliders(R, C);
   updateNetlistPreview();
-  updateSliderDisplays();
 }
 
-function syncCanvasToSliders(R, C) {
-  for (const comp of canvas.components) {
-    if (comp.type === 'resistor')  comp.value = R;
-    if (comp.type === 'capacitor') comp.value = C;
-  }
-  canvas.render();
-}
-
-sliderR.addEventListener('input', scheduleAnalytical);
-sliderC.addEventListener('input', scheduleAnalytical);
-
-// ─── Slider frequenza sinusoide ───────────────────────────────────────────────
-
-const sliderSineFreq = document.getElementById('slider-sine-freq');
-
-function getSineFreq()    { return Math.pow(10, parseFloat(sliderSineFreq.value)); }
-function getSineAmp()     { return parseFloat(document.getElementById('sine-amp').value)     || 1; }
 function getSinePeriods() { return parseFloat(document.getElementById('sine-periods').value) || 6; }
 
-sliderSineFreq.addEventListener('input', () => {
-  const f = getSineFreq();
-  document.getElementById('val-sine-freq').textContent =
-    f >= 1000 ? `${+(f/1000).toPrecision(3)} kHz` : `${+f.toPrecision(4)} Hz`;
-  scheduleAnalytical();
-});
-
-document.getElementById('sine-amp').addEventListener('input',     scheduleAnalytical);
 document.getElementById('sine-periods').addEventListener('input', scheduleAnalytical);
 
 // ─── Tipo di analisi ──────────────────────────────────────────────────────────
@@ -1047,7 +1098,7 @@ document.querySelectorAll('input[name="analysis"]').forEach(radio => {
   radio.addEventListener('change', () => {
     const type = getSelectedAnalysis();
     document.getElementById('params-ac').style.display      = type === 'ac'         ? '' : 'none';
-    document.getElementById('params-sine').style.display    = type === 'sinusoidal' ? '' : 'none';
+    document.getElementById('params-transient').style.display = type === 'transient' ? '' : 'none';
     document.getElementById('transient-section').style.display    = 'none';
     document.getElementById('sine-metrics-section').style.display = 'none';
     updateAnalyticalFromSliders();
@@ -1077,7 +1128,7 @@ function renderCompEditor(detail) {
     const types = {};
     (detail.comps || []).forEach(c => { types[c.type] = (types[c.type] || 0) + 1; });
     const summary = Object.entries(types)
-      .map(([t, n]) => `${n}× ${COMP_DEFS[t]?.label || t}`)
+      .map(([t, n]) => `${n}× ${window.CIRCUIT_COMPONENT_REGISTRY[t]?.label || t}`)
       .join(', ');
     container.innerHTML = `
       <div class="comp-multi-select">
@@ -1092,10 +1143,14 @@ function renderCompEditor(detail) {
     container.innerHTML = '<div class="no-selection">Clicca un componente per modificarlo</div>';
     return;
   }
-  const def      = COMP_DEFS[comp.type];
+  const def      = window.CIRCUIT_COMPONENT_REGISTRY[comp.type];
   const hasValue = def.defaultValue !== null;
 
   const isBJT = comp.type === 'bjt_npn';
+  const isPot = comp.type === 'potentiometer';
+  const isSwitch = comp.type === 'switch_spst';
+  const isLed = comp.type?.startsWith?.('led_');
+  const isVSource = comp.type === 'vsource';
 
   // Campi valore: per BJT mostriamo β + Ic_Q; per gli altri il campo singolo
   const valueFields = isBJT
@@ -1107,6 +1162,57 @@ function renderCompEditor(detail) {
          gm = Ic_Q/26 mV &nbsp;·&nbsp; rπ = β/gm<br>
          ro = 100 kΩ (VA≈100 V @ 1 mA)
        </div>`
+    : isPot
+      ? `<div class="comp-field"><label>Valore totale (${def.unit})</label>
+           <input type="text" id="comp-value-input" value="${comp.value}" /></div>
+         <div class="comp-field"><label>Cursore (%)</label>
+           <input type="number" id="comp-wiper-input" min="0.1" max="99.9" step="0.1"
+                  value="${((comp.wiper ?? 0.5) * 100).toFixed(1)}" /></div>
+         <div class="comp-field" style="font-size:10px;color:var(--text-2);line-height:1.4">
+           Terminali: A - cursore - B. In simulazione diventa due resistenze: A-W e W-B.
+         </div>`
+    : isSwitch
+      ? `<div class="comp-field"><label>Stato</label>
+           <select id="comp-switch-state" style="background:var(--bg-input);border:1px solid var(--border);border-radius:4px;color:var(--text-1);padding:3px 6px;font-size:11px;width:100%">
+             <option value="open" ${comp.closed ? '' : 'selected'}>Aperto</option>
+             <option value="closed" ${comp.closed ? 'selected' : ''}>Chiuso</option>
+           </select></div>
+         <div class="comp-field" style="font-size:10px;color:var(--text-2);line-height:1.4">
+           Modello: aperto = 1 TΩ, chiuso = 1 mΩ.
+         </div>`
+    : isLed
+      ? `<div class="comp-field"><label>Caduta diretta (${def.unit})</label>
+           <input type="text" id="comp-value-input" value="${comp.value}" /></div>
+         <div class="comp-field"><label>R interna modello (Ω)</label>
+           <input type="text" id="comp-led-r-input" value="${comp.series_r ?? 10}" /></div>
+         <div class="comp-field" style="font-size:10px;color:var(--text-2);line-height:1.4">
+           Modello semplificato: sorgente Vf + piccola resistenza serie. Usa comunque una resistenza esterna di limitazione.
+         </div>`
+    : isVSource
+      ? `<div class="comp-field"><label>Tipo segnale</label>
+           <select id="comp-source-signal" style="background:var(--bg-input);border:1px solid var(--border);border-radius:4px;color:var(--text-1);padding:3px 6px;font-size:11px;width:100%">
+             <option value="dc" ${(comp.signal || 'dc') === 'dc' ? 'selected' : ''}>DC</option>
+             <option value="sine" ${comp.signal === 'sine' ? 'selected' : ''}>Sinusoidale</option>
+             <option value="step" ${comp.signal === 'step' ? 'selected' : ''}>Gradino</option>
+             <option value="ac" ${comp.signal === 'ac' ? 'selected' : ''}>AC small-signal</option>
+           </select></div>
+         <div class="comp-field" data-source-field="dc ac"><label>DC / valore base (V)</label>
+           <input type="text" id="comp-source-dc" value="${comp.dc ?? comp.value ?? 1}" /></div>
+         <div class="comp-field" data-source-field="sine ac"><label>Ampiezza sine / AC (V)</label>
+           <input type="text" id="comp-source-amp" value="${comp.amplitude ?? comp.ac_amplitude ?? 1}" /></div>
+         <div class="comp-field" data-source-field="sine"><label>Frequenza sine (Hz)</label>
+           <input type="number" id="comp-source-freq" value="${comp.frequency ?? 1000}" step="any" min="0.000001" /></div>
+         <div class="comp-field" data-source-field="sine"><label>Offset sine (V)</label>
+           <input type="text" id="comp-source-offset" value="${comp.offset ?? 0}" /></div>
+         <div class="comp-field" data-source-field="sine"><label>Fase sine (deg)</label>
+           <input type="number" id="comp-source-phase" value="${comp.phase ?? 0}" step="any" /></div>
+         <div class="comp-field" data-source-field="step"><label>Gradino: iniziale / finale (V)</label>
+           <input type="text" id="comp-source-step" value="${comp.step_initial ?? 0} / ${comp.step_final ?? comp.value ?? 1}" /></div>
+         <div class="comp-field" data-source-field="step"><label>Tempo gradino (s)</label>
+           <input type="number" id="comp-source-step-time" value="${comp.step_time ?? 0}" step="any" min="0" /></div>
+         <div class="comp-field" style="font-size:10px;color:var(--text-2);line-height:1.4">
+           Ogni generatore mantiene il proprio segnale. La sezione Simulazione sceglie solo il tipo di calcolo.
+         </div>`
     : hasValue
       ? `<div class="comp-field"><label>Valore (${def.unit})</label>
            <input type="text" id="comp-value-input" value="${comp.value}" /></div>`
@@ -1132,6 +1238,17 @@ function renderCompEditor(detail) {
 
   const lblInput = document.getElementById('comp-label-input');
   const valInput = document.getElementById('comp-value-input');
+  const wiperInput = document.getElementById('comp-wiper-input');
+  const switchState = document.getElementById('comp-switch-state');
+  const ledRInput = document.getElementById('comp-led-r-input');
+  const srcSignal = document.getElementById('comp-source-signal');
+  const srcDc = document.getElementById('comp-source-dc');
+  const srcAmp = document.getElementById('comp-source-amp');
+  const srcFreq = document.getElementById('comp-source-freq');
+  const srcOffset = document.getElementById('comp-source-offset');
+  const srcPhase = document.getElementById('comp-source-phase');
+  const srcStep = document.getElementById('comp-source-step');
+  const srcStepTime = document.getElementById('comp-source-step-time');
   const icqInput = document.getElementById('comp-icq-input');
   const rotSel   = document.getElementById('comp-rot-select');
 
@@ -1151,11 +1268,129 @@ function renderCompEditor(detail) {
         const parsed = parseSI(valInput.value);
         if (parsed !== null) {
           comp.value = parsed;
-          if (comp.type === 'resistor')  sliderR.value = Math.log10(parsed);
-          if (comp.type === 'capacitor') sliderC.value = Math.log10(parsed);
           canvas.render();
-          updateAnalyticalFromSliders();
+          canvas._emitChange();
         }
+      }
+    });
+  }
+
+  if (wiperInput) {
+    wiperInput.addEventListener('change', () => {
+      const pct = parseFloat(wiperInput.value);
+      if (!isNaN(pct) && pct > 0 && pct < 100) {
+        comp.wiper = pct / 100;
+        canvas.render();
+        canvas._emitChange();
+      }
+    });
+  }
+
+  if (switchState) {
+    switchState.addEventListener('change', () => {
+      comp.closed = switchState.value === 'closed';
+      canvas.render();
+      canvas._emitChange();
+    });
+  }
+
+  if (ledRInput) {
+    ledRInput.addEventListener('change', () => {
+      const parsed = parseSI(ledRInput.value);
+      if (parsed !== null && parsed > 0) {
+        comp.series_r = parsed;
+        canvas.render();
+        canvas._emitChange();
+      }
+    });
+  }
+
+  function emitSourceChange() {
+    comp.value = comp.dc ?? comp.value ?? 0;
+    canvas.render();
+    canvas._emitChange();
+  }
+
+  function updateSourceFieldVisibility() {
+    if (!srcSignal) return;
+    const mode = srcSignal.value;
+    container.querySelectorAll('[data-source-field]').forEach(field => {
+      const visibleFor = (field.dataset.sourceField || '').split(/\s+/);
+      field.style.display = visibleFor.includes(mode) ? '' : 'none';
+    });
+  }
+
+  if (srcSignal) {
+    updateSourceFieldVisibility();
+    srcSignal.addEventListener('change', () => {
+      comp.signal = srcSignal.value;
+      updateSourceFieldVisibility();
+      emitSourceChange();
+    });
+  }
+  if (srcDc) {
+    srcDc.addEventListener('change', () => {
+      const parsed = parseSI(srcDc.value);
+      if (parsed !== null) {
+        comp.dc = parsed;
+        comp.value = parsed;
+        emitSourceChange();
+      }
+    });
+  }
+  if (srcAmp) {
+    srcAmp.addEventListener('change', () => {
+      const parsed = parseSI(srcAmp.value);
+      if (parsed !== null && parsed >= 0) {
+        comp.amplitude = parsed;
+        comp.ac_amplitude = parsed;
+        emitSourceChange();
+      }
+    });
+  }
+  if (srcFreq) {
+    srcFreq.addEventListener('change', () => {
+      const parsed = parseFloat(srcFreq.value);
+      if (!isNaN(parsed) && parsed > 0) {
+        comp.frequency = parsed;
+        emitSourceChange();
+      }
+    });
+  }
+  if (srcOffset) {
+    srcOffset.addEventListener('change', () => {
+      const parsed = parseSI(srcOffset.value);
+      if (parsed !== null) {
+        comp.offset = parsed;
+        emitSourceChange();
+      }
+    });
+  }
+  if (srcPhase) {
+    srcPhase.addEventListener('change', () => {
+      const parsed = parseFloat(srcPhase.value);
+      if (!isNaN(parsed)) {
+        comp.phase = parsed;
+        emitSourceChange();
+      }
+    });
+  }
+  if (srcStep) {
+    srcStep.addEventListener('change', () => {
+      const parts = srcStep.value.split(/[\/,;]/).map(s => parseSI(s.trim()));
+      if (parts.length >= 2 && parts[0] !== null && parts[1] !== null) {
+        comp.step_initial = parts[0];
+        comp.step_final = parts[1];
+        emitSourceChange();
+      }
+    });
+  }
+  if (srcStepTime) {
+    srcStepTime.addEventListener('change', () => {
+      const parsed = parseFloat(srcStepTime.value);
+      if (!isNaN(parsed) && parsed >= 0) {
+        comp.step_time = parsed;
+        emitSourceChange();
       }
     });
   }
@@ -1205,6 +1440,7 @@ _paToggle.addEventListener('click', () => {
 
 document.getElementById('circuit-canvas').addEventListener('circuit-change', () => {
   updateNetlistPreview();
+  updateAnalyticalFromSliders();
   _refreshNodeOverlay();
   if (_paOpen) paramAnalyzer.update(canvas.components);
 });
@@ -1233,10 +1469,12 @@ function updateNetlistPreview() {
 
 // ─── Simulate ─────────────────────────────────────────────────────────────────
 
-document.getElementById('btn-simulate').addEventListener('click', runSimulation);
+const _btnSimulate = document.getElementById('btn-simulate');
+_btnSimulate?.addEventListener('click', runSimulation);
 
 async function runSimulation() {
-  const btn  = document.getElementById('btn-simulate');
+  const btn  = _btnSimulate || document.getElementById('btn-simulate');
+  if (!btn) return;
   const opts = buildAnalysisOptions();
 
   // Se c'è un nodo sonda selezionato, lo passiamo come punto di misura
@@ -1317,6 +1555,11 @@ function handleSimResult(data) {
     if (window.circuitSimSettings?.shouldAutoCurrentAnim()) {
       _startSineAnimation(r, buildAnalysisOptions().frequency);
     }
+  } else if (type === 'dc') {
+    clearAllDS(vfChart);
+    clearAllDS(vtChart);
+    setBadge('badge-vf', `DC Tier ${data.tier_used}`, true);
+    updateMetrics(data.metrics);
   }
 
   // ── Oscilloscopio: aggiorna tracce se disponibili ─────────────────────────
@@ -1397,8 +1640,9 @@ function handleSimResult(data) {
  * I(t) = (Vin / |Z|) · sin(2π·fc·t + φI)   dove φI = arctan(1/(ωRC))
  */
 function _startAcAnimation(metrics) {
-  const R  = getRValue();
-  const C  = getCValue();
+  const rc = getRcValuesFromCircuit();
+  if (!rc) return;
+  const { R, C } = rc;
   const fc = metrics?.cutoff_frequency_hz || (1 / (2 * Math.PI * R * C));
   const w  = 2 * Math.PI * fc;
   const Z  = Math.sqrt(R * R + 1 / (w * C) ** 2);
@@ -1425,12 +1669,14 @@ function _startTransientAnimation(r) {
     return;
   }
 
-  const R     = getRValue();
+  const rc = getRcValuesFromCircuit();
+  if (!rc) return;
+  const { R, C } = rc;
   const Vstep = 1.0;
   const currents = r.voltages.map(vout => (Vstep - vout) / R);
 
   // Velocità di playback: 1 τ = 1 secondo di animazione
-  const tau_ms = Math.max(R * getCValue() * 1000, 0.001);
+  const tau_ms = Math.max(R * C * 1000, 0.001);
   const freq_equiv = 1000 / tau_ms;
 
   console.log('[CurrentAnim] transient start', { pts: r.times.length, I_max: Math.max(...currents), freq_equiv });
@@ -1447,7 +1693,9 @@ function _startSineAnimation(r, freq_hz) {
     return;
   }
 
-  const R = getRValue();
+  const rc = getRcValuesFromCircuit();
+  if (!rc) return;
+  const { R } = rc;
   const currents = r.vin.map((vin, i) => (vin - (r.vout[i] ?? 0)) / R);
 
   console.log('[CurrentAnim] sine start', { pts: r.times.length, freq_hz, I_max: Math.max(...currents.map(Math.abs)) });
@@ -1536,15 +1784,7 @@ function buildAnalysisOptions() {
   if (type === 'ac')
     return { type: 'ac', start_freq: fStart, stop_freq: fStop, points_per_decade: 100 };
   if (type === 'transient')
-    return { type: 'transient', points: 600 };
-  if (type === 'sinusoidal')
-    return {
-      type: 'sinusoidal',
-      frequency:        getSineFreq(),
-      amplitude:        getSineAmp(),
-      periods:          getSinePeriods(),
-      points_per_cycle: 60,
-    };
+    return { type: 'transient', points: 600, periods: getSinePeriods() };
   return { type };
 }
 
@@ -1560,15 +1800,19 @@ function setStatus(msg, type = '') {
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
 (function init() {
-  initCircuitSimSettings(canvas);
-  _initLayoutControls();
-  initBottomCharts();
-  window.circuitSimSettings?.applyAll();
-  document.addEventListener('circuitsim-settings-changed', (e) => {
-    if (e.detail.key === 'theme' || e.detail.key === 'all') _refreshChartsTheme();
-  });
-  updateSliderDisplays();
-  canvas.loadExample();
-  updateAnalyticalFromSliders();
-  setStatus('Circuito RC caricato — fc = 338 Hz · premi Simula per la verifica MNA');
+  try {
+    initCircuitSimSettings(canvas);
+    _initLayoutControls();
+    initBottomCharts();
+    window.circuitSimSettings?.applyAll();
+    document.addEventListener('circuitsim-settings-changed', (e) => {
+      if (e.detail.key === 'theme' || e.detail.key === 'all') _refreshChartsTheme();
+    });
+    updateNetlistPreview();
+  } catch (err) {
+    console.error('[CircuitSim] Errore inizializzazione UI:', err);
+    setStatus('Errore avvio grafici — controlla la console (F12)', 'error');
+  }
+  _activateTool('select', document.querySelector('[data-tool="select"]'));
+  setStatus('Canvas vuota — disegna un circuito o carica Esempio RC dal menu in alto');
 })();

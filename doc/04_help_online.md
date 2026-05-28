@@ -33,6 +33,16 @@ Nell'header, accanto al nome **CircuitSim**, è presente il pulsante **?** (icon
 
 Il contenuto è in JavaScript (`APP_HELP_SECTIONS`) per aggiornamenti rapidi senza ricaricare il server Django. Per testi estesi o immagini, si può estendere con fetch di Markdown o HTML statico.
 
+## Risoluzione problemi — Simula
+
+Se **Simula** non parte o compare *Circuito vuoto*:
+
+1. Leggi la barra di stato sotto il canvas.
+2. **Ctrl+F5** e verifica il messaggio *Circuito RC caricato…* oppure usa **Esempio RC**.
+3. Controlla GND, generatore V e collegamenti tra i terminali.
+
+---
+
 ## Altri tipi di aiuto nell'app
 
 - **?** sulla palette componenti → popup parametri (`comp-help.js` / `COMP_HELP`)

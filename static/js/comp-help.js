@@ -17,6 +17,37 @@ const COMP_HELP = {
     ],
     tips: 'In AC: impedenza Z = R (indipendente dalla frequenza).',
   },
+  potentiometer: {
+    title: 'Potenziometro (RV)',
+    desc: 'Resistenza variabile a tre terminali. Il cursore divide il valore totale in due resistenze, utile per partitori di tensione.',
+    params: [
+      { sym: 'Rtot', name: 'Resistenza totale', unit: 'Ω', note: 'Valore fra terminali A e B' },
+      { sym: 'W', name: 'Cursore', unit: '%', note: 'Posizione del terminale centrale' },
+      { sym: 'R1', name: 'Tratto A-W', unit: 'Ω', note: 'R1 = Rtot · W' },
+      { sym: 'R2', name: 'Tratto W-B', unit: 'Ω', note: 'R2 = Rtot · (1 - W)' },
+    ],
+    tips: 'In simulazione viene espanso automaticamente in due resistenze lineari.',
+  },
+  switch_spst: {
+    title: 'Interruttore',
+    desc: 'Componente a due terminali che apre o chiude un ramo del circuito.',
+    params: [
+      { sym: 'ON', name: 'Chiuso', unit: 'Ω', note: 'Modello equivalente: 1 mΩ' },
+      { sym: 'OFF', name: 'Aperto', unit: 'Ω', note: 'Modello equivalente: 1 TΩ' },
+    ],
+    tips: 'Utile per provare configurazioni alternative senza cancellare fili o componenti.',
+  },
+  led: {
+    title: 'LED',
+    desc: 'Diodo emettitore di luce. In questa versione usa un modello lineare semplificato con caduta diretta Vf.',
+    params: [
+      { sym: 'A', name: 'Anodo', unit: '-', note: 'Terminale positivo del LED' },
+      { sym: 'K', name: 'Catodo', unit: '-', note: 'Terminale negativo del LED' },
+      { sym: 'Vf', name: 'Caduta diretta', unit: 'V', note: 'Rosso circa 1.8 V; verde/giallo circa 2 V; blu/bianco circa 3.2 V' },
+      { sym: 'R', name: 'Limitazione corrente', unit: 'Ω', note: 'Aggiungi sempre una resistenza esterna in serie' },
+    ],
+    tips: 'Modello semplificato per simulazioni didattiche: non sostituisce ancora un diodo SPICE non lineare.',
+  },
   capacitor: {
     title: 'Condensatore (C)',
     desc: 'Accumula carica elettrica. In AC introduce uno sfasamento −90° tra tensione e corrente.',
@@ -27,6 +58,29 @@ const COMP_HELP = {
       { sym: 'fc', name: 'Freq. di taglio (RC)', unit: 'Hz', note: 'fc = 1 / (2π·R·C)' },
     ],
     tips: 'In transitorio: carica/scarica esponenziale con costante τ.',
+    extraHtml: `
+      <div class="ch-practical">
+        <div class="ch-practical-title">Regola pratica per filtro RC</div>
+        <p>Formula di partenza:</p>
+        <p><code>C = 1 / (2&pi; &middot; R &middot; fc)</code></p>
+        <p>Con <strong>R = 10 k&Omega;</strong> fisso:</p>
+        <p><code>C &asymp; 16 / fc</code> in <strong>nF</strong>, con <strong>fc</strong> in Hz.</p>
+        <table class="ch-mini-table">
+          <thead><tr><th>Banda</th><th>fc</th><th>C calc.</th><th>Std.</th></tr></thead>
+          <tbody>
+            <tr><td>Basse</td><td>80 Hz</td><td>200 nF</td><td>220 nF</td></tr>
+            <tr><td>Medio-basse</td><td>300 Hz</td><td>53 nF</td><td>47 nF</td></tr>
+            <tr><td>Medie</td><td>1 kHz</td><td>16 nF</td><td>15 nF</td></tr>
+            <tr><td>Medio-alte</td><td>3 kHz</td><td>5.3 nF</td><td>4.7 nF</td></tr>
+            <tr><td>Alte</td><td>10 kHz</td><td>1.6 nF</td><td>1.5 nF</td></tr>
+            <tr><td>Altissime</td><td>100 kHz</td><td>0.16 nF</td><td>150 pF</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Mnemonica:</strong> centinaia di Hz &rarr; decine di nF; kHz &rarr; nF; decine di kHz &rarr; centinaia di pF.</p>
+        <p>Ogni volta che moltiplichi la frequenza per 10, dividi il condensatore per 10.</p>
+        <p>Se R diventa 1 k&Omega;, C si moltiplica per 10. Se R diventa 100 k&Omega;, C si divide per 10.</p>
+        <p><strong>LINEA AMP:</strong> per fc &gt; 20 kHz con R = 10 k&Omega;: C &asymp; 0.8 nF, valore standard 1 nF.</p>
+      </div>`,
   },
   inductor: {
     title: 'Induttore (L)',
@@ -105,10 +159,13 @@ const COMP_HELP = {
 const HOVER_HELP = {
   // Componenti palette
   resistor:  { title: 'Resistenza', text: 'Clicca sulla canvas per piazzare. Modifica R dal pannello sinistro o doppio-click sul simbolo. Scorciatoia: R.' },
+  potentiometer: { title: 'Potenziometro', text: 'Tre terminali per partitori regolabili. Modifica valore totale e cursore nel pannello componente. Scorciatoia: P.' },
+  switch_spst: { title: 'Interruttore', text: 'Apre o chiude un ramo. Cambia stato nel pannello componente. Scorciatoia: X.' },
   capacitor: { title: 'Condensatore', text: 'Definisce τ = R·C e la frequenza di taglio fc. In AC introduce −20 dB/dec oltre fc. Scorciatoia: C.' },
   inductor:  { title: 'Induttore', text: 'Complementare al condensatore: reattanza cresce con f. Utile in filtri RL e RLC. Scorciatoia: L.' },
   gnd:       { title: 'Massa', text: 'Riferimento 0 V obbligatorio per la simulazione MNA. Collega il terminale inferiore al nodo comune.' },
   bjt_npn:   { title: 'BJT NPN', text: 'Transistore attivo small-signal. Imposta β e Ic_Q nel pannello componente. Scorciatoia: Q.' },
+  led:       { title: 'LED', text: 'Indicatore luminoso con anodo e catodo. Modello semplificato Vf + resistenza serie interna; usa una resistenza esterna.' },
   vsource:   { title: 'Gen. tensione', text: 'Alimenta il circuito. Tipo di eccitazione scelto in Analisi (AC, gradino, sinusoide). Scorciatoia: V.' },
   opamp:     { title: 'Op-Amp', text: 'In arrivo: amplificatore operazionale per circuiti attivi e filtri attivi.' },
   mosfet_n:  { title: 'MOSFET N', text: 'In arrivo: transistore MOS per commutazione e amplificazione.' },
@@ -180,7 +237,8 @@ class CompHelpModal {
         <thead><tr><th>Simbolo</th><th>Parametro</th><th>Unità</th><th>Descrizione</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      ${data.tips ? `<p class="ch-tips">💡 ${data.tips}</p>` : ''}`;
+      ${data.tips ? `<p class="ch-tips">💡 ${data.tips}</p>` : ''}
+      ${data.extraHtml || ''}`;
 
     this._overlay.style.display = 'flex';
   }

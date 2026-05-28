@@ -1,6 +1,8 @@
 # CircuitSim — Documentazione
 
-Questa cartella contiene tutta la documentazione ufficiale del progetto CircuitSim, organizzata per destinatario e scopo.
+Questa cartella contiene la documentazione utente e storica del progetto CircuitSim, organizzata per destinatario e scopo.
+
+Per collaboratori tecnici e modelli AI usare anche la nuova cartella [`../docs/`](../docs/), che contiene il briefing architetturale aggiornato dopo l'introduzione del component registry e dei generatori configurabili per componente.
 
 ---
 

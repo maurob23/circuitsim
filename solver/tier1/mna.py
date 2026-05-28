@@ -86,14 +86,24 @@ def solve_transient(netlist: dict) -> dict:
 
     # Auto-set t_end to 5τ if not specified
     if t_end <= 0:
-        R = next(
-            (c["value"] for c in netlist["components"] if c["type"] == "resistor"), None
-        )
-        C = next(
-            (c["value"] for c in netlist["components"] if c["type"] == "capacitor"), None
-        )
-        tau = (R * C) if (R and C) else 1e-3
-        t_end = 5.0 * tau
+        sine_freqs = [
+            float(c.get("frequency", 0))
+            for c in netlist["components"]
+            if c.get("type") == "voltage_source"
+            and c.get("signal") == "sine"
+            and float(c.get("frequency", 0)) > 0
+        ]
+        if sine_freqs:
+            t_end = float(analysis.get("periods", 6.0)) / min(sine_freqs)
+        else:
+            R = next(
+                (c["value"] for c in netlist["components"] if c["type"] == "resistor"), None
+            )
+            C = next(
+                (c["value"] for c in netlist["components"] if c["type"] == "capacitor"), None
+            )
+            tau = (R * C) if (R and C) else 1e-3
+            t_end = 5.0 * tau
 
     times = np.linspace(0, t_end, n_pts)
     dt = times[1] - times[0]
@@ -116,7 +126,7 @@ def solve_transient(netlist: dict) -> dict:
     voltages: list[float] = []
     node_traces: dict[str, list[float]] = {n: [] for n in node_list}
 
-    for _t in times:
+    for t in times:
         A, b = _build_mna_transient(
             netlist["components"],
             node_idx,
@@ -124,6 +134,7 @@ def solve_transient(netlist: dict) -> dict:
             n_nodes,
             size,
             dt,
+            float(t),
             v_prev,
             ind_curr,
         )
@@ -209,11 +220,12 @@ def solve_sinusoidal(netlist: dict) -> dict:
     vout_vals: list[float] = []
     node_traces: dict[str, list[float]] = {n: [] for n in node_list}
 
+    primary = vsources[0] if vsources else {}
     for t in times:
-        v_now = amplitude * np.sin(2.0 * np.pi * freq * t)
+        v_now = _source_value(primary, float(t), analysis)
         A, b  = _build_mna_sine(
             netlist["components"], node_idx, vsources,
-            n_nodes, size, dt, v_prev, v_now, ind_curr,
+            n_nodes, size, dt, v_prev, float(t), analysis, ind_curr,
         )
         try:
             v = np.linalg.solve(A, b)
@@ -257,7 +269,8 @@ def _build_mna_sine(
     size: int,
     dt: float,
     v_prev: np.ndarray,
-    v_now: float,
+    t: float,
+    analysis: dict,
     ind_curr: dict[str, float] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """MNA Backward Euler con sorgente di tensione sinusoidale al passo t."""
@@ -309,7 +322,7 @@ def _build_mna_sine(
                 ni = node_idx[n_node]
                 A[ni][src_row] -= 1.0
                 A[src_row][ni] -= 1.0
-            b[src_row] = v_now
+            b[src_row] = _source_value(comp, t, analysis)
 
         elif ctype == "bjt_npn":
             beta = float(comp.get("value", 100) or 100)
@@ -461,7 +474,12 @@ def _build_mna(
                 A[ni][src_row] -= 1.0
                 A[src_row][ni] -= 1.0
 
-            amplitude = float(comp.get("amplitude", comp.get("value", 1.0)))
+            amplitude = float(
+                comp.get(
+                    "ac_amplitude" if omega != 0 else "dc",
+                    comp.get("amplitude", comp.get("value", 1.0)),
+                )
+            )
             b[src_row] = amplitude
 
         elif ctype == "current_source":
@@ -490,6 +508,7 @@ def _build_mna_transient(
     n_nodes: int,
     size: int,
     dt: float,
+    t: float,
     v_prev: np.ndarray,
     ind_curr: dict[str, float] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -546,7 +565,7 @@ def _build_mna_transient(
                 ni = node_idx[n_node]
                 A[ni][src_row] -= 1.0
                 A[src_row][ni] -= 1.0
-            b[src_row] = float(comp.get("value", 1.0))
+            b[src_row] = _source_value(comp, t, {})
 
         elif ctype == "bjt_npn":
             beta = float(comp.get("value", 100) or 100)
@@ -649,7 +668,30 @@ def _node_voltage(v: np.ndarray, node: str, node_idx: dict) -> complex:
 def _source_amplitude(vsources: list[dict]) -> float:
     if not vsources:
         return 1.0
-    return float(vsources[0].get("amplitude", vsources[0].get("value", 1.0)))
+    return float(
+        vsources[0].get(
+            "ac_amplitude",
+            vsources[0].get("amplitude", vsources[0].get("value", 1.0)),
+        )
+    )
+
+
+def _source_value(comp: dict, t: float, analysis: dict | None = None) -> float:
+    analysis = analysis or {}
+    signal = comp.get("signal", "dc")
+
+    if signal == "sine":
+        amp = float(comp.get("amplitude", analysis.get("amplitude", comp.get("value", 1.0))))
+        freq = float(comp.get("frequency", analysis.get("frequency", 1000.0)))
+        offset = float(comp.get("offset", 0.0))
+        phase = np.deg2rad(float(comp.get("phase", 0.0)))
+        return offset + amp * np.sin(2.0 * np.pi * freq * t + phase)
+
+    if signal == "step":
+        t_step = float(comp.get("step_time", 0.0))
+        return float(comp.get("step_final", comp.get("value", 1.0))) if t >= t_step else float(comp.get("step_initial", 0.0))
+
+    return float(comp.get("dc", comp.get("value", 0.0)))
 
 
 # ---------------------------------------------------------------------------

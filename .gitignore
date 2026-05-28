@@ -42,6 +42,9 @@ Thumbs.db
 # Node
 node_modules/
 
+# Local reference manuals
+static/docs/*.pdf
+
 # Coverage / test artifacts
 .coverage
 htmlcov/

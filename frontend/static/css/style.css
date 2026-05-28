@@ -327,9 +327,11 @@ body { font-family: var(--font); font-size: 13px; background: var(--bg-app); col
 
 .comp-cat-header {
   display: flex;
+  position: relative;
   align-items: center;
   gap: 7px;
-  padding: 6px 12px 5px;       /* 12px = stesso inset del titolo sezione */
+  width: 100%;
+  padding: 6px 42px 5px 12px;       /* spazio a destra riservato all'icona manuale */
   cursor: pointer;
   user-select: none;
   font-size: 11px;
@@ -340,9 +342,41 @@ body { font-family: var(--font); font-size: 13px; background: var(--bg-app); col
   transition: color 0.15s, background 0.15s;
 }
 .comp-cat-header:hover { color: var(--text-1); background: #161b22; }
+.comp-cat-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.comp-cat-manual-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.comp-cat-manual-btn:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--bg-input);
+}
+.comp-cat-manual-btn svg {
+  pointer-events: none;
+}
 
 .comp-cat-chevron {
-  flex-shrink: 0;
+  flex: 0 0 12px;
   color: #484f58;
   transition: transform 0.2s;
   pointer-events: none;   /* i click arrivano sempre al .comp-cat-header */
@@ -604,6 +638,64 @@ body { font-family: var(--font); font-size: 13px; background: var(--bg-app); col
   font-size: 11px;
   font-family: var(--mono);
   padding: 3px 6px;
+}
+
+.translator-dialog {
+  width: min(92vw, 980px);
+  max-width: 92vw;
+  min-width: 560px;
+  min-height: 420px;
+  max-height: 92vh;
+  resize: both;
+  overflow: auto;
+}
+.translator-swap {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.translator-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.translator-pane {
+  min-width: 0;
+}
+.translator-textarea {
+  width: 100%;
+  min-height: 280px;
+  resize: vertical;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-1);
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 8px;
+}
+.translator-output {
+  color: #dbeafe;
+}
+.translator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+@media (max-width: 760px) {
+  .translator-dialog {
+    min-width: 0;
+    width: 96vw;
+    resize: vertical;
+  }
+  .translator-grid {
+    grid-template-columns: 1fr;
+  }
+  .translator-textarea {
+    min-height: 180px;
+  }
 }
 .calc-elec-in:focus { outline: none; border-color: var(--blue); }
 .calc-unit { color: #484f58; font-size: 10px; }
@@ -1535,6 +1627,46 @@ body.hide-panel-analyst .panel-rail { display: flex; }
   padding-left: 8px;
   margin: 0;
   line-height: 1.4;
+}
+.ch-practical {
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: #0d1117;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.ch-practical p { margin: 0 0 6px; }
+.ch-practical code {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+}
+.ch-practical-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.ch-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0 8px;
+  font-size: 10px;
+}
+.ch-mini-table th,
+.ch-mini-table td {
+  padding: 3px 5px;
+  border-bottom: 1px solid var(--border-light);
+  text-align: left;
+}
+.ch-mini-table th {
+  color: var(--text-3);
+  font-weight: 700;
 }
 
 .analyst-header {

@@ -367,8 +367,13 @@ Nella sidebar sinistra, sezione **Impostazioni** (in fondo):
 
 ## 12. Domande Frequenti
 
+**Premo "Simula" ma non succede nulla (o compare "Circuito vuoto").**  
+1. Controlla la **barra di stato** sotto il canvas: indica il motivo (circuito vuoto, manca generatore, ecc.).  
+2. Se all'apertura **non** compare il messaggio *"Circuito RC caricato…"*, fai **Ctrl+F5** (refresh forzato) oppure clicca **Esempio RC**.  
+3. Verifica che ogni componente sia collegato, ci sia almeno una **massa (GND)** e un **generatore di tensione**.
+
 **Il circuito non produce risultati dopo "Simula".**  
-Verifica che: ogni componente abbia almeno un terminale collegato, ci sia almeno una massa (GND) nel circuito, e ci sia almeno un generatore di tensione.
+Oltre ai punti sopra: almeno un passivo (R, C o L) e nodi di uscita collegati; controlla la console del browser (F12) in caso di errore di rete verso `/api/simulate/`.
 
 **I grafici sono vuoti.**  
 Assicurati che il circuito abbia almeno due nodi distinti (ingresso e uscita) e che siano correttamente collegati.

@@ -33,7 +33,11 @@ python manage.py runserver
 
 Pulsante **?** nell'header (accanto a CircuitSim v1.0) — manuale integrato con navigazione per sezioni.
 
-Documentazione: [`doc/`](doc/) — manuale utente, architettura, help on line (`04_help_online.md`).
+Documentazione utente e storica: [`doc/`](doc/) — manuale utente, architettura, help on line (`04_help_online.md`).
+
+Briefing tecnico aggiornato per collaboratori e modelli AI: [`docs/`](docs/).
+Lettura consigliata: `architecture_overview.md`, `backend_structure.md`,
+`frontend_structure.md`, `api_spec.md`, `simulation_engine.md`.
 
 ### Keyboard shortcuts (circuit editor)
 

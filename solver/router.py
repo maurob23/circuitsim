@@ -10,14 +10,16 @@ Current tiers:
 
 from __future__ import annotations
 
+from .registry import (
+    NONLINEAR_COMPONENT_TYPES,
+    SUPPORTED_ANALYSES,
+    passive_component_types,
+    tier1_component_types,
+)
 from .tier1 import mna as tier1
 
-# Component types supported by the linear MNA solver
-_LINEAR_TYPES = frozenset(
-    {"resistor", "capacitor", "inductor", "voltage_source", "current_source"}
-)
-_PASSIVE_TYPES = frozenset({"resistor", "capacitor", "inductor"})
-_NONLINEAR_TYPES = frozenset({"diode", "bjt", "mosfet", "opamp"})
+_TIER1_TYPES = tier1_component_types()
+_PASSIVE_TYPES = passive_component_types()
 
 _TIER1_MAX_PASSIVES = 50
 
@@ -32,14 +34,14 @@ def route_simulation(netlist: dict) -> dict:
 
     comp_types = {c["type"] for c in components}
     n_passives = sum(1 for c in components if c["type"] in _PASSIVE_TYPES)
-    has_nonlinear = bool(comp_types & _NONLINEAR_TYPES)
+    has_nonlinear = bool(comp_types & NONLINEAR_COMPONENT_TYPES)
 
     # --- Tier 1: pure Python MNA for linear circuits ---
     if (
         not has_nonlinear
         and n_passives <= _TIER1_MAX_PASSIVES
-        and analysis_type in {"ac", "dc", "transient", "sinusoidal"}
-        and comp_types <= _LINEAR_TYPES
+        and analysis_type in SUPPORTED_ANALYSES
+        and comp_types <= _TIER1_TYPES
     ):
         return _run_tier1(netlist, analysis_type)
 

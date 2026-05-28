@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools.js — Strumenti: conversione condensatori, progettazione filtri, frequenzimetro.
  */
 'use strict';
@@ -347,6 +347,396 @@ class FreqMeterTool {
   }
 }
 
+// 4. Traduttore EN/IT locale
+
+const TRANSLATOR_GLOSSARY = {
+  en_it: {
+    the: 'il',
+    a: 'un',
+    an: 'un',
+    and: 'e',
+    or: 'o',
+    of: 'di',
+    to: 'a',
+    at: 'a',
+    in: 'in',
+    on: 'su',
+    with: 'con',
+    without: 'senza',
+    from: 'da',
+    for: 'per',
+    by: 'da',
+    as: 'come',
+    is: 'e',
+    are: 'sono',
+    be: 'essere',
+    can: 'puo',
+    may: 'puo',
+    must: 'deve',
+    should: 'dovrebbe',
+    when: 'quando',
+    if: 'se',
+    then: 'poi',
+    this: 'questo',
+    that: 'che',
+    these: 'questi',
+    those: 'quelli',
+    each: 'ogni',
+    all: 'tutti',
+    into: 'in',
+    through: 'attraverso',
+    between: 'tra',
+    across: 'attraverso',
+    before: 'prima',
+    after: 'dopo',
+    used: 'usato',
+    use: 'usa',
+    connected: 'collegato',
+    connect: 'collega',
+    connecting: 'collegando',
+    selected: 'selezionato',
+    select: 'seleziona',
+    placed: 'posizionato',
+    place: 'posiziona',
+    calculate: 'calcola',
+    calculated: 'calcolato',
+    measured: 'misurato',
+    increase: 'aumenta',
+    decreases: 'diminuisce',
+    decrease: 'diminuisci',
+    high: 'alta',
+    low: 'bassa',
+    higher: 'piu alta',
+    lower: 'piu bassa',
+    first: 'primo',
+    second: 'secondo',
+    order: 'ordine',
+    series: 'serie',
+    parallel: 'parallelo',
+    equivalent: 'equivalente',
+    ideal: 'ideale',
+    real: 'reale',
+    positive: 'positivo',
+    negative: 'negativo',
+    terminal: 'terminale',
+    terminals: 'terminali',
+    lead: 'terminale',
+    leads: 'terminali',
+    purposes: 'scopi',
+    practical: 'pratici',
+    then: 'quindi',
+    earth: 'terra',
+    defined: 'definito',
+    zero: 'zero',
+    potential: 'potenziale',
+    relative: 'relativo',
+    other: 'altro',
+    things: 'cose',
+    practically: 'praticamente',
+    immune: 'immune',
+    wavering: 'oscillazioni',
+    makes: 'rende',
+    convenient: 'comodo',
+    useful: 'utile',
+    which: 'cui',
+    signals: 'segnali',
+    various: 'diversi',
+    pieces: 'elementi',
+    equipment: 'apparecchiatura',
+    they: 'essi',
+    share: 'condividono',
+    thus: 'quindi',
+    devices: 'dispositivi',
+    common: 'comune',
+    voltage: 'tensione',
+    current: 'corrente',
+    electrical: 'elettrico',
+    electronic: 'elettronico',
+    resistor: 'resistenza',
+    resistance: 'resistenza',
+    capacitor: 'condensatore',
+    capacitance: 'capacita',
+    inductor: 'induttore',
+    inductance: 'induttanza',
+    ground: 'massa',
+    node: 'nodo',
+    nodes: 'nodi',
+    wire: 'filo',
+    circuit: 'circuito',
+    circuits: 'circuiti',
+    simulation: 'simulazione',
+    simulate: 'simula',
+    transient: 'transitorio',
+    frequency: 'frequenza',
+    phase: 'fase',
+    gain: 'guadagno',
+    magnitude: 'modulo',
+    cutoff: 'taglio',
+    filter: 'filtro',
+    input: 'ingresso',
+    output: 'uscita',
+    source: 'sorgente',
+    power: 'potenza',
+    load: 'carico',
+    switch: 'interruttore',
+    open: 'aperto',
+    closed: 'chiuso',
+    waveform: 'forma d onda',
+    amplitude: 'ampiezza',
+    offset: 'offset',
+    value: 'valore',
+    component: 'componente',
+    components: 'componenti',
+    analysis: 'analisi',
+    graph: 'grafico',
+    chart: 'grafico',
+    manual: 'manuale',
+    measure: 'misura',
+    measurement: 'misura',
+    time: 'tempo',
+    period: 'periodo',
+    pulse: 'impulso',
+    sine: 'sinusoide',
+    square: 'quadra',
+    transformer: 'trasformatore',
+    diode: 'diodo',
+    transistor: 'transistor',
+    microcontroller: 'microcontrollore',
+    battery: 'batteria',
+    resistor: 'resistenza',
+    ohm: 'ohm',
+    farad: 'farad',
+    henry: 'henry',
+    hertz: 'hertz',
+    impedance: 'impedenza',
+    admittance: 'ammettenza',
+    reactance: 'reattanza',
+    conductance: 'conduttanza',
+    charge: 'carica',
+    discharge: 'scarica',
+    charging: 'carica',
+    discharging: 'scarica',
+    steady: 'stabile',
+    state: 'stato',
+    steady_state: 'regime permanente',
+    response: 'risposta',
+    step: 'gradino',
+    noise: 'rumore',
+    signal: 'segnale',
+    small: 'piccolo',
+    large: 'grande',
+    model: 'modello',
+    equation: 'equazione',
+    equations: 'equazioni',
+    law: 'legge',
+    laws: 'leggi',
+    branch: 'ramo',
+    mesh: 'maglia',
+    loop: 'anello',
+    reference: 'riferimento',
+    divider: 'partitore',
+    divider: 'partitore',
+    divider: 'partitore',
+    gain: 'guadagno',
+    loss: 'perdita',
+    attenuation: 'attenuazione',
+    bandwidth: 'larghezza di banda',
+    slope: 'pendenza',
+    decibel: 'decibel',
+    octave: 'ottava',
+  },
+};
+
+TRANSLATOR_GLOSSARY.it_en = Object.fromEntries(
+  Object.entries(TRANSLATOR_GLOSSARY.en_it).map(([en, it]) => [it, en])
+);
+
+const TRANSLATOR_PHRASES = {
+  en_it: [
+    ['the earth is defined to be at a zero potential', 'la terra viene definita a potenziale zero'],
+    ['a potential that is practically immune to wavering', 'un potenziale praticamente immune da oscillazioni'],
+    ['this makes the earth', 'questo rende la terra'],
+    ['by connecting various pieces of electronics equipment to the earth ground', 'collegando diversi apparecchi elettronici alla terra fisica'],
+    ['they can all share', 'possono tutti condividere'],
+    ['the earth’s ground reference potential', 'il potenziale di riferimento di massa della terra'],
+    ["the earth's ground reference potential", 'il potenziale di riferimento di massa della terra'],
+    ['and thus all devices share a common reference', 'e quindi tutti i dispositivi condividono un riferimento comune'],
+    ['for practical purposes', 'ai fini pratici'],
+    ['is defined to be', 'viene definita come'],
+    ['zero potential', 'potenziale zero'],
+    ['relative to other things', 'rispetto ad altri elementi'],
+    ['practically immune to wavering', 'praticamente immune da oscillazioni'],
+    ['a convenient and useful potential', 'un potenziale comodo e utile'],
+    ['on which to reference other signals', 'rispetto al quale riferire altri segnali'],
+    ['various pieces of electronics equipment', 'diversi apparecchi elettronici'],
+    ['electronics equipment', 'apparecchi elettronici'],
+    ['earth ground', 'terra fisica'],
+    ['ground reference potential', 'potenziale di riferimento di massa'],
+    ['ground reference', 'riferimento di massa'],
+    ['reference potential', 'potenziale di riferimento'],
+    ['all devices', 'tutti i dispositivi'],
+    ['common reference', 'riferimento comune'],
+    ['voltage source', 'sorgente di tensione'],
+    ['current source', 'sorgente di corrente'],
+    ['low pass filter', 'filtro passa-basso'],
+    ['high pass filter', 'filtro passa-alto'],
+    ['band pass filter', 'filtro passa-banda'],
+    ['cutoff frequency', 'frequenza di taglio'],
+    ['time constant', 'costante di tempo'],
+    ['steady state', 'regime permanente'],
+    ['small signal', 'piccolo segnale'],
+    ['output voltage', 'tensione di uscita'],
+    ['input voltage', 'tensione di ingresso'],
+    ['voltage divider', 'partitore di tensione'],
+    ['power supply', 'alimentatore'],
+    ['ground node', 'nodo di massa'],
+    ['open circuit', 'circuito aperto'],
+    ['short circuit', 'cortocircuito'],
+    ['series resistor', 'resistenza in serie'],
+    ['parallel resistor', 'resistenza in parallelo'],
+    ['transient analysis', 'analisi transitoria'],
+    ['dc analysis', 'analisi DC'],
+    ['ac analysis', 'analisi AC'],
+    ['frequency response', 'risposta in frequenza'],
+    ['phase shift', 'sfasamento'],
+  ],
+};
+TRANSLATOR_PHRASES.it_en = TRANSLATOR_PHRASES.en_it.map(([en, it]) => [it, en]);
+
+function _translateWithGlossary(text, direction) {
+  const dict = TRANSLATOR_GLOSSARY[direction] || TRANSLATOR_GLOSSARY.en_it;
+  const phrases = TRANSLATOR_PHRASES[direction] || TRANSLATOR_PHRASES.en_it;
+  let out = text;
+
+  for (const [source, target] of phrases) {
+    const escaped = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp(`\\b${escaped}\\b`, 'gi'), match =>
+      match[0] === match[0]?.toUpperCase()
+        ? target.charAt(0).toUpperCase() + target.slice(1)
+        : target
+    );
+  }
+
+  return out.replace(/[A-Za-zÀ-ÿ]+(?:[-_][A-Za-zÀ-ÿ]+)*/g, token => {
+    const normalized = token.toLowerCase().replace(/-/g, '_');
+    let translated = dict[normalized];
+    if (!translated && normalized.endsWith('s')) {
+      translated = dict[normalized.slice(0, -1)];
+      if (translated && !translated.endsWith('i')) translated += 'i';
+    }
+    if (!translated) return token;
+    return token[0] === token[0]?.toUpperCase()
+      ? translated.charAt(0).toUpperCase() + translated.slice(1)
+      : translated;
+  });
+}
+
+class TranslatorTool {
+  constructor() {
+    this._modal = _bindToolModal('translator-overlay', 'translator-close');
+    this._source = document.getElementById('translator-source');
+    this._target = document.getElementById('translator-target');
+    this._sourceLabel = document.getElementById('translator-source-label');
+    this._targetLabel = document.getElementById('translator-target-label');
+    this._status = document.getElementById('translator-status');
+    this._direction = 'en_it';
+
+    document.getElementById('translator-run')?.addEventListener('click', () => this.translate());
+    document.getElementById('translator-clear')?.addEventListener('click', () => this.clear());
+    document.getElementById('translator-copy')?.addEventListener('click', () => this.copy());
+    document.getElementById('translator-swap')?.addEventListener('click', () => this.swap());
+    this._source?.addEventListener('input', () => this._markPending());
+  }
+
+  open() {
+    this._modal?.open();
+    this._source?.focus();
+    this._markPending();
+  }
+
+  _cleanInput() {
+    return (this._source?.value || '').replace(/([A-Za-zÀ-ÿ])-\s*\n\s*([A-Za-zÀ-ÿ])/g, '$1$2');
+  }
+
+  _translateLocal() {
+    const text = this._cleanInput();
+    if (!this._target) return;
+    this._target.value = _translateWithGlossary(text, this._direction);
+    if (this._status) {
+      this._status.textContent = text.trim()
+        ? 'Anteprima locale. Premi Traduci per usare DeepSeek.'
+        : 'DeepSeek API via backend. Inserisci testo e premi Traduci.';
+    }
+  }
+
+  _markPending() {
+    if (this._target) this._target.value = '';
+    if (this._status) {
+      this._status.textContent = (this._source?.value || '').trim()
+        ? 'Premi Traduci per usare DeepSeek.'
+        : 'DeepSeek API via backend. Inserisci testo e premi Traduci.';
+    }
+  }
+
+  async translate() {
+    const text = this._cleanInput();
+    if (!this._target || !text.trim()) {
+      this._translateLocal();
+      return;
+    }
+
+    if (this._status) this._status.textContent = 'Traduzione DeepSeek in corso...';
+    try {
+      const resp = await fetch('/api/translate/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, direction: this._direction }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        this._target.value = '';
+        if (this._status) this._status.textContent = data.error || 'DeepSeek non disponibile.';
+        return;
+      }
+      this._target.value = data.translated_text || '';
+      if (this._status) this._status.textContent = 'Traduzione completata con DeepSeek.';
+    } catch (_err) {
+      this._target.value = '';
+      if (this._status) this._status.textContent = 'Backend non raggiungibile: traduzione DeepSeek non eseguita.';
+    }
+  }
+
+  clear() {
+    if (this._source) this._source.value = '';
+    if (this._target) this._target.value = '';
+    this._source?.focus();
+  }
+
+  swap() {
+    this._direction = this._direction === 'en_it' ? 'it_en' : 'en_it';
+    const sourceText = this._source?.value || '';
+    if (this._source && this._target) {
+      this._source.value = this._target.value || sourceText;
+      this._target.value = '';
+    }
+    if (this._sourceLabel) this._sourceLabel.textContent = this._direction === 'en_it' ? 'Inglese' : 'Italiano';
+    if (this._targetLabel) this._targetLabel.textContent = this._direction === 'en_it' ? 'Italiano' : 'Inglese';
+    this._markPending();
+  }
+
+  async copy() {
+    const text = this._target?.value || '';
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      if (this._status) this._status.textContent = 'Risultato copiato negli appunti.';
+    } catch (_err) {
+      if (this._status) this._status.textContent = 'Copia non disponibile: seleziona il testo e usa Ctrl+C.';
+    }
+  }
+}
+
 window.CapConverterTool = CapConverterTool;
 window.FilterCalcTool   = FilterCalcTool;
 window.FreqMeterTool    = FreqMeterTool;
+window.TranslatorTool   = TranslatorTool;

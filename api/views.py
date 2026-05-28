@@ -2,12 +2,30 @@ import json
 import time
 import uuid
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
+from api.validation import validate_netlist
+from services.pdf_viewer import candidate_sumatra_paths, open_manual
+from services.translation import TranslationError, translate_text
 from solver.router import route_simulation
+
+
+MANUAL_PDF_PATH = settings.BASE_DIR / "static" / "docs" / "practical-electronics-for-inventors.pdf"
+
+
+MANUAL_TOPICS = {
+    "passivi": 71,
+    "attivi": 423,
+    "alimentatori": 847,
+    "trasformatori": 879,
+    "mcu": 1019,
+    "digitale": 941,
+    "strumenti": 1125,
+}
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -18,13 +36,8 @@ class SimulateView(View):
         except (json.JSONDecodeError, ValueError) as exc:
             return JsonResponse({"error": f"Invalid JSON: {exc}"}, status=400)
 
-        if "components" not in netlist or "analysis" not in netlist:
-            return JsonResponse(
-                {"error": "Netlist must contain 'components' and 'analysis' keys"},
-                status=400,
-            )
-
         try:
+            validate_netlist(netlist)
             t_start = time.perf_counter()
             result = route_simulation(netlist)
             elapsed_ms = int((time.perf_counter() - t_start) * 1000)
@@ -32,6 +45,9 @@ class SimulateView(View):
             return JsonResponse({"error": str(exc)}, status=422)
         except Exception as exc:
             return JsonResponse({"error": f"Solver error: {exc}"}, status=500)
+
+        if "error" in result:
+            return JsonResponse({"error": result["error"]}, status=422)
 
         return JsonResponse(
             {
@@ -47,6 +63,7 @@ class SimulateView(View):
                     "vin":          result.get("vin", []),
                     "vout":         result.get("vout", []),
                     "node_traces":  result.get("node_traces", {}),
+                    "node_voltages": result.get("node_voltages", {}),
                 },
                 "metrics": result.get("metrics", {}),
                 "solver_info": {
@@ -61,3 +78,61 @@ class SimulateView(View):
 class HealthView(View):
     def get(self, request):
         return JsonResponse({"status": "ok", "version": "0.1.0"})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class TranslateView(View):
+    def post(self, request):
+        try:
+            payload = json.loads(request.body or "{}")
+        except (json.JSONDecodeError, ValueError) as exc:
+            return JsonResponse({"error": f"Invalid JSON: {exc}"}, status=400)
+
+        try:
+            result = translate_text(
+                text=payload.get("text", ""),
+                direction=payload.get("direction", "en_it"),
+            )
+        except TranslationError as exc:
+            return JsonResponse({"error": str(exc)}, status=422)
+
+        return JsonResponse(result)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ManualOpenView(View):
+    def post(self, request):
+        try:
+            payload = json.loads(request.body or "{}")
+        except (json.JSONDecodeError, ValueError) as exc:
+            return JsonResponse({"error": f"Invalid JSON: {exc}"}, status=400)
+
+        topic = payload.get("topic")
+        page = MANUAL_TOPICS.get(topic)
+        if page is None:
+            return JsonResponse({"error": "Manuale non configurato per questa sezione"}, status=404)
+
+        if not MANUAL_PDF_PATH.exists():
+            return JsonResponse(
+                {
+                    "error": "PDF non trovato",
+                    "path": str(MANUAL_PDF_PATH),
+                },
+                status=404,
+            )
+
+        try:
+            opened = open_manual(str(MANUAL_PDF_PATH), page=page)
+        except OSError as exc:
+            return JsonResponse({"error": f"Impossibile aprire SumatraPDF: {exc}"}, status=500)
+
+        if not opened:
+            return JsonResponse(
+                {
+                    "error": "SumatraPDF non trovato",
+                    "paths_checked": [str(path) for path in candidate_sumatra_paths()],
+                },
+                status=500,
+            )
+
+        return JsonResponse({"status": "ok", "topic": topic, "page": page})

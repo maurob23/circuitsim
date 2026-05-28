@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CircuitSim</title>
   {% load static %}
-  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260528-1" />
   <link rel="stylesheet" href="{% static 'css/themes.css' %}" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
@@ -181,7 +181,13 @@
       <div class="comp-cat" id="cat-passivi">
         <div class="comp-cat-header">
           <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <span>Passivi</span>
+          <span class="comp-cat-title">Passivi</span>
+          <button type="button" class="comp-cat-manual-btn" data-manual-topic="passivi" title="Apri riferimento: componenti passivi" aria-label="Apri riferimento componenti passivi">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 2.5 h4.2 c.9 0 1.5.4 1.8 1 v10 c-.3-.6-.9-1-1.8-1 H3 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M9 3.5 c.3-.6.9-1 1.8-1 H13 v10 h-2.2 c-.9 0-1.5.4-1.8 1 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            </svg>
+          </button>
         </div>
         <div class="comp-cat-body">
           <div class="comp-item-row">
@@ -190,6 +196,32 @@
               <span class="comp-item-name">Resistenza</span><span class="comp-item-key">R</span>
             </button>
             <button type="button" class="comp-help-btn" data-help="resistor" aria-label="Parametri resistenza">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="potentiometer" data-help-id="potentiometer" title="Potenziometro (P)">
+              <svg class="comp-item-icon" viewBox="0 0 48 24">
+                <line x1="0" y1="14" x2="8" y2="14" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M8 14 L10 8 L13 20 L16 8 L19 20 L22 8 L25 20 L27 14" stroke="currentColor" stroke-width="1.8" fill="none"/>
+                <line x1="27" y1="14" x2="48" y2="14" stroke="currentColor" stroke-width="1.8"/>
+                <line x1="24" y1="2" x2="24" y2="10" stroke="currentColor" stroke-width="1.6"/>
+                <polyline points="20,6 24,2 28,6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="comp-item-name">Potenziometro</span><span class="comp-item-key">P</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="potentiometer" aria-label="Parametri potenziometro">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="switch_spst" data-help-id="switch_spst" title="Interruttore (X)">
+              <svg class="comp-item-icon" viewBox="0 0 48 20">
+                <line x1="0" y1="10" x2="16" y2="10" stroke="currentColor" stroke-width="1.8"/>
+                <circle cx="18" cy="10" r="2.5" fill="currentColor"/>
+                <line x1="22" y1="7" x2="34" y2="2" stroke="currentColor" stroke-width="1.8"/>
+                <circle cx="36" cy="10" r="2.5" fill="currentColor"/>
+                <line x1="38" y1="10" x2="48" y2="10" stroke="currentColor" stroke-width="1.8"/>
+              </svg>
+              <span class="comp-item-name">Interruttore</span><span class="comp-item-key">X</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="switch_spst" aria-label="Parametri interruttore">?</button>
           </div>
           <div class="comp-item-row">
             <button class="comp-item" data-tool="capacitor" data-help-id="capacitor" title="Condensatore (C)">
@@ -219,7 +251,13 @@
       <div class="comp-cat" id="cat-attivi">
         <div class="comp-cat-header">
           <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <span>Attivi</span>
+          <span class="comp-cat-title">Attivi</span>
+          <button type="button" class="comp-cat-manual-btn" data-manual-topic="attivi" title="Apri riferimento: componenti attivi" aria-label="Apri riferimento componenti attivi">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 2.5 h4.2 c.9 0 1.5.4 1.8 1 v10 c-.3-.6-.9-1-1.8-1 H3 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M9 3.5 c.3-.6.9-1 1.8-1 H13 v10 h-2.2 c-.9 0-1.5.4-1.8 1 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            </svg>
+          </button>
         </div>
         <div class="comp-cat-body">
           <div class="comp-item-row">
@@ -228,6 +266,41 @@
               <span class="comp-item-name">BJT NPN</span><span class="comp-item-key">Q</span>
             </button>
             <button type="button" class="comp-help-btn" data-help="bjt_npn" aria-label="Parametri BJT">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="led_red" data-help-id="led" title="LED rosso">
+              <svg class="comp-item-icon" viewBox="0 0 48 24"><line x1="0" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,4 16,20 31,12" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="31" y1="4" x2="31" y2="20" stroke="currentColor" stroke-width="1.8"/><line x1="31" y1="12" x2="48" y2="12" stroke="currentColor" stroke-width="1.8"/><path d="M28 3 L35 0 M34 1 L35 0 L35 3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+              <span class="comp-item-name">LED rosso</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="led" aria-label="Parametri LED">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="led_green" data-help-id="led" title="LED verde">
+              <svg class="comp-item-icon" viewBox="0 0 48 24"><line x1="0" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,4 16,20 31,12" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="31" y1="4" x2="31" y2="20" stroke="currentColor" stroke-width="1.8"/><line x1="31" y1="12" x2="48" y2="12" stroke="currentColor" stroke-width="1.8"/><path d="M28 3 L35 0 M34 1 L35 0 L35 3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+              <span class="comp-item-name">LED verde</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="led" aria-label="Parametri LED">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="led_yellow" data-help-id="led" title="LED giallo">
+              <svg class="comp-item-icon" viewBox="0 0 48 24"><line x1="0" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,4 16,20 31,12" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="31" y1="4" x2="31" y2="20" stroke="currentColor" stroke-width="1.8"/><line x1="31" y1="12" x2="48" y2="12" stroke="currentColor" stroke-width="1.8"/><path d="M28 3 L35 0 M34 1 L35 0 L35 3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+              <span class="comp-item-name">LED giallo</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="led" aria-label="Parametri LED">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="led_blue" data-help-id="led" title="LED blu">
+              <svg class="comp-item-icon" viewBox="0 0 48 24"><line x1="0" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,4 16,20 31,12" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="31" y1="4" x2="31" y2="20" stroke="currentColor" stroke-width="1.8"/><line x1="31" y1="12" x2="48" y2="12" stroke="currentColor" stroke-width="1.8"/><path d="M28 3 L35 0 M34 1 L35 0 L35 3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+              <span class="comp-item-name">LED blu</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="led" aria-label="Parametri LED">?</button>
+          </div>
+          <div class="comp-item-row">
+            <button class="comp-item" data-tool="led_white" data-help-id="led" title="LED bianco">
+              <svg class="comp-item-icon" viewBox="0 0 48 24"><line x1="0" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,4 16,20 31,12" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="31" y1="4" x2="31" y2="20" stroke="currentColor" stroke-width="1.8"/><line x1="31" y1="12" x2="48" y2="12" stroke="currentColor" stroke-width="1.8"/><path d="M28 3 L35 0 M34 1 L35 0 L35 3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+              <span class="comp-item-name">LED bianco</span>
+            </button>
+            <button type="button" class="comp-help-btn" data-help="led" aria-label="Parametri LED">?</button>
           </div>
           <div class="comp-item-row">
             <button class="comp-item comp-item-soon" data-tool="opamp" data-help-id="opamp" title="Op-Amp (prossimamente)" disabled>
@@ -250,7 +323,13 @@
       <div class="comp-cat" id="cat-alimentatori">
         <div class="comp-cat-header">
           <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <span>Alimentatori</span>
+          <span class="comp-cat-title">Alimentatori</span>
+          <button type="button" class="comp-cat-manual-btn" data-manual-topic="alimentatori" title="Apri riferimento: alimentatori e sorgenti" aria-label="Apri riferimento alimentatori e sorgenti">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 2.5 h4.2 c.9 0 1.5.4 1.8 1 v10 c-.3-.6-.9-1-1.8-1 H3 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M9 3.5 c.3-.6.9-1 1.8-1 H13 v10 h-2.2 c-.9 0-1.5.4-1.8 1 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            </svg>
+          </button>
         </div>
         <div class="comp-cat-body">
           <div class="comp-item-row">
@@ -274,7 +353,13 @@
       <div class="comp-cat" id="cat-trasformatori">
         <div class="comp-cat-header">
           <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <span>Trasformatori</span>
+          <span class="comp-cat-title">Trasformatori</span>
+          <button type="button" class="comp-cat-manual-btn" data-manual-topic="trasformatori" title="Apri riferimento: trasformatori" aria-label="Apri riferimento trasformatori">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 2.5 h4.2 c.9 0 1.5.4 1.8 1 v10 c-.3-.6-.9-1-1.8-1 H3 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M9 3.5 c.3-.6.9-1 1.8-1 H13 v10 h-2.2 c-.9 0-1.5.4-1.8 1 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            </svg>
+          </button>
         </div>
         <div class="comp-cat-body comp-cat-body-empty">
           <span class="comp-empty-msg">Prossimamente</span>
@@ -285,7 +370,13 @@
       <div class="comp-cat" id="cat-mcu">
         <div class="comp-cat-header">
           <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <span>Microcontrollori</span>
+          <span class="comp-cat-title">Microcontrollori</span>
+          <button type="button" class="comp-cat-manual-btn" data-manual-topic="mcu" title="Apri riferimento: microcontrollori" aria-label="Apri riferimento microcontrollori">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 2.5 h4.2 c.9 0 1.5.4 1.8 1 v10 c-.3-.6-.9-1-1.8-1 H3 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M9 3.5 c.3-.6.9-1 1.8-1 H13 v10 h-2.2 c-.9 0-1.5.4-1.8 1 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            </svg>
+          </button>
         </div>
         <div class="comp-cat-body comp-cat-body-empty">
           <span class="comp-empty-msg">Prossimamente</span>
@@ -296,7 +387,13 @@
       <div class="comp-cat" id="cat-digitale">
         <div class="comp-cat-header">
           <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <span>Digitale</span>
+          <span class="comp-cat-title">Digitale</span>
+          <button type="button" class="comp-cat-manual-btn" data-manual-topic="digitale" title="Apri riferimento: elettronica digitale" aria-label="Apri riferimento elettronica digitale">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 2.5 h4.2 c.9 0 1.5.4 1.8 1 v10 c-.3-.6-.9-1-1.8-1 H3 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M9 3.5 c.3-.6.9-1 1.8-1 H13 v10 h-2.2 c-.9 0-1.5.4-1.8 1 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            </svg>
+          </button>
         </div>
         <div class="comp-cat-body comp-cat-body-empty">
           <span class="comp-empty-msg">Prossimamente</span>
@@ -307,7 +404,13 @@
       <div class="comp-cat" id="cat-strumenti">
         <div class="comp-cat-header">
           <svg class="comp-cat-chevron" width="10" height="10" viewBox="0 0 10 10"><polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <span>Strumenti</span>
+          <span class="comp-cat-title">Strumenti</span>
+          <button type="button" class="comp-cat-manual-btn" data-manual-topic="strumenti" title="Apri riferimento: strumenti di misura" aria-label="Apri riferimento strumenti di misura">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 2.5 h4.2 c.9 0 1.5.4 1.8 1 v10 c-.3-.6-.9-1-1.8-1 H3 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M9 3.5 c.3-.6.9-1 1.8-1 H13 v10 h-2.2 c-.9 0-1.5.4-1.8 1 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            </svg>
+          </button>
         </div>
         <div class="comp-cat-body">
           <div class="comp-item-row">
@@ -351,6 +454,18 @@
               <span class="comp-item-name">Frequenzimetro</span>
             </button>
           </div>
+          <div class="comp-item-row">
+            <button type="button" class="comp-item comp-tool-item" id="btn-open-translator" data-help-id="translator" title="Traduttore inglese / italiano">
+              <svg class="comp-item-icon" viewBox="0 0 48 28">
+                <rect x="5" y="5" width="17" height="18" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <rect x="26" y="5" width="17" height="18" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <text x="13.5" y="18" text-anchor="middle" font-size="8" fill="currentColor" font-family="monospace">EN</text>
+                <text x="34.5" y="18" text-anchor="middle" font-size="8" fill="#58a6ff" font-family="monospace">IT</text>
+                <path d="M21 14 h5 m-2 -2 l2 2 -2 2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="comp-item-name">Traduttore EN/IT</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -369,35 +484,16 @@
       </div>
     </div>
 
-    <div class="sidebar-section sidebar-collapsible collapsed" id="sec-param-rapidi" data-sec="param-rapidi">
-      <div class="section-title sidebar-sec-toggle">
-        <span>Parametri rapidi</span>
-        <span class="sidebar-sec-chevron">▶</span>
-      </div>
-      <div class="sidebar-sec-body">
-      <div class="param-row">
-        <label>R <span class="param-unit">Ω</span></label>
-        <input type="range" id="slider-r" min="1" max="5" step="0.01" value="4" class="param-slider"/>
-        <span class="param-val" id="val-r">10 kΩ</span>
-      </div>
-      <div class="param-row">
-        <label>C <span class="param-unit">F</span></label>
-        <input type="range" id="slider-c" min="-11" max="-6" step="0.01" value="-7.328" class="param-slider"/>
-        <span class="param-val" id="val-c">47 nF</span>
-      </div>
-      </div>
-    </div>
-
     <div class="sidebar-section sidebar-collapsible collapsed" id="sec-analisi" data-sec="analisi">
       <div class="section-title sidebar-sec-toggle">
-        <span>Analisi</span>
+        <span>Simulazione</span>
         <span class="sidebar-sec-chevron">▶</span>
       </div>
       <div class="sidebar-sec-body">
       <div class="analysis-select">
-        <label><input type="radio" name="analysis" value="ac" checked/> AC (Bode)</label>
-        <label><input type="radio" name="analysis" value="transient"/> Gradino</label>
-        <label><input type="radio" name="analysis" value="sinusoidal"/> Sinusoide</label>
+        <label><input type="radio" name="analysis" value="dc"/> DC operating point</label>
+        <label><input type="radio" name="analysis" value="ac" checked/> AC sweep (Bode)</label>
+        <label><input type="radio" name="analysis" value="transient"/> Transitorio</label>
       </div>
 
       <!-- Parametri AC -->
@@ -412,22 +508,13 @@
         </div>
       </div>
 
-      <!-- Parametri Sinusoide -->
-      <div id="params-sine" style="display:none">
-        <div class="param-row">
-          <label>Freq</label>
-          <input type="range" id="slider-sine-freq" min="1" max="5" step="0.01" value="2.529" class="param-slider"/>
-          <span class="param-val" id="val-sine-freq">338 Hz</span>
-        </div>
-        <div class="param-row">
-          <label>Amp</label>
-          <input type="number" id="sine-amp" value="1" step="0.1" min="0.01" class="num-input"/> V
-        </div>
+      <!-- Parametri transitorio -->
+      <div id="params-transient" style="display:none">
         <div class="param-row">
           <label>Periodi</label>
           <input type="number" id="sine-periods" value="6" step="1" min="2" max="50" class="num-input"/>
         </div>
-        <div class="sine-info" id="sine-info"></div>
+        <div class="sine-info" id="sine-info">Per generatori sinusoidali indica quanti periodi simulare.</div>
       </div>
       </div>
     </div>
@@ -506,8 +593,8 @@
               <span>Analisi predefinita</span>
               <select data-setting="defaultAnalysis" class="settings-select" aria-label="Analisi predefinita">
                 <option value="ac">AC (Bode)</option>
-                <option value="transient">Gradino</option>
-                <option value="sinusoidal">Sinusoide</option>
+                <option value="dc">DC operating point</option>
+                <option value="transient">Transitorio</option>
               </select>
             </label>
             <label class="settings-check">
@@ -998,6 +1085,37 @@
   </div>
 </div>
 
+<!-- Traduttore EN/IT -->
+<div id="translator-overlay" class="calc-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="calc-dialog tool-dialog-wide translator-dialog">
+    <div class="calc-header">
+      <span class="calc-title">Traduttore EN / IT</span>
+      <button type="button" id="translator-swap" class="calc-elec-btn translator-swap" title="Inverti lingua">EN ⇄ IT</button>
+      <button type="button" id="translator-close" class="comp-help-close" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="calc-body">
+      <div class="translator-grid">
+        <div class="translator-pane">
+          <div class="calc-elec-label" id="translator-source-label">Inglese</div>
+          <textarea id="translator-source" class="translator-textarea" spellcheck="true" placeholder="Inserisci testo tecnico o una frase dal manuale..."></textarea>
+        </div>
+        <div class="translator-pane">
+          <div class="calc-elec-label" id="translator-target-label">Italiano</div>
+          <textarea id="translator-target" class="translator-textarea translator-output" readonly placeholder="Traduzione..."></textarea>
+        </div>
+      </div>
+      <div class="translator-actions">
+        <button type="button" id="translator-run" class="calc-elec-btn">Traduci</button>
+        <button type="button" id="translator-clear" class="calc-elec-btn">Pulisci</button>
+        <button type="button" id="translator-copy" class="calc-elec-btn">Copia risultato</button>
+      </div>
+      <div id="translator-status" class="tool-note">
+        DeepSeek API via backend. Inserisci testo e premi Traduci.
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Help on line (manuale applicazione) -->
 <div id="app-help-overlay" class="comp-help-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="app-help-heading">
   <div class="comp-help-dialog app-help-dialog">
@@ -1030,7 +1148,8 @@
          autocomplete="off" spellcheck="false"/>
 </div>
 
-<script src="{% static 'js/circuit-canvas.js' %}"></script>
+<script src="{% static 'js/component-registry.js' %}?v=20260525-2"></script>
+<script src="{% static 'js/circuit-canvas.js' %}?v=20260525-3"></script>
 <script src="{% static 'js/current-animator.js' %}"></script>
 <script src="{% static 'js/chart-theme.js' %}"></script>
 <script src="{% static 'js/settings.js' %}"></script>
@@ -1038,10 +1157,10 @@
 <script src="{% static 'js/oscilloscope.js' %}"></script>
 <script src="{% static 'js/param-analyzer.js' %}"></script>
 <script src="{% static 'js/sim-analyst.js' %}"></script>
-<script src="{% static 'js/comp-help.js' %}"></script>
+<script src="{% static 'js/comp-help.js' %}?v=20260525-4"></script>
 <script src="{% static 'js/app-help.js' %}"></script>
 <script src="{% static 'js/calculator.js' %}"></script>
-<script src="{% static 'js/tools.js' %}"></script>
-<script src="{% static 'js/app.js' %}"></script>
+<script src="{% static 'js/tools.js' %}?v=20260528-3"></script>
+<script src="{% static 'js/app.js' %}?v=20260527-2"></script>
 </body>
 </html>
