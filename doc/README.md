@@ -87,4 +87,4 @@ Quando vengono aggiunte nuove funzionalità al progetto:
 | Proposte e miglioramenti | 1.1 | Mag 2026 |
 | Help on line | 1.0 | Mag 2026 |
 
-*Documentazione aggiornata: Maggio 2026 — CircuitSim v1.0*
+*Documentazione aggiornata: Maggio 2026 — CircuitSim v1.0 / v1.0.1 (fix Simula)*

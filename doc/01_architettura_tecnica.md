@@ -11,6 +11,7 @@
 |---|---|---|
 | 1.0 | Mag 2026 | Prima release: RC filter, AC/DC/transient/sinusoidal, BJT NPN, canvas zoom/pan, oscilloscopio mono-canale |
 | 1.1 | Mag 2026 | **Sprint 1**: salvataggio/caricamento JSON, induttore con companion Backward Euler, oscilloscopio multi-canale 4 CH, `node_traces` nel solver |
+| 1.0.1 | Mag 2026 | **Fix Simula**: `initBottomCharts()` con `CHART_THEME` in scope; boot con `loadExample()` garantito; `setTool` → evento `toolchange` su `this.el` |
 
 ---
 

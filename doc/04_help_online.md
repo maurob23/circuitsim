@@ -27,9 +27,9 @@ Nell'header, accanto al nome **CircuitSim**, è presente il pulsante **?** (icon
 
 | File | Ruolo |
 |---|---|
-| `static/js/app-help.js` | Contenuto HTML sezioni + `AppHelpModal` |
-| `templates/index.html` | Pulsante `#btn-app-help`, overlay `#app-help-overlay` |
-| `static/css/style.css` | Stili `.app-help-*` |
+| `frontend/static/js/app-help.js` | Contenuto HTML sezioni + `AppHelpModal` |
+| `frontend/templates/index.html` | Pulsante `#btn-app-help`, overlay `#app-help-overlay` |
+| `frontend/static/css/style.css` | Stili `.app-help-*` |
 
 Il contenuto è in JavaScript (`APP_HELP_SECTIONS`) per aggiornamenti rapidi senza ricaricare il server Django. Per testi estesi o immagini, si può estendere con fetch di Markdown o HTML statico.
 
