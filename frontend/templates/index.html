@@ -1116,6 +1116,32 @@
   </div>
 </div>
 
+<!-- Selezione manuale PDF -->
+<div id="book-select-overlay" class="calc-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="book-select-title">
+  <div class="calc-dialog" style="max-width: 380px;">
+    <div class="calc-header">
+      <span class="calc-title" id="book-select-title">Scegli il manuale</span>
+      <button type="button" id="book-select-close" class="comp-help-close" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="calc-body">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button type="button" class="calc-elec-btn" data-book-id="inventors" style="text-align:left; height:auto; padding:10px">
+          <strong>Practical Electronics for Inventors</strong><br>
+          <span style="font-size:11px; opacity:0.8; font-weight:normal">Apre alla pagina del componente (se configurata)</span>
+        </button>
+        <button type="button" class="calc-elec-btn" data-book-id="art" style="text-align:left; height:auto; padding:10px">
+          <strong>The Art of Electronics</strong><br>
+          <span style="font-size:11px; opacity:0.8; font-weight:normal">Apre il manuale dall'inizio</span>
+        </button>
+        <button type="button" class="calc-elec-btn" data-book-id="guitarists" style="text-align:left; height:auto; padding:10px">
+          <strong>Electronics for Guitarists</strong><br>
+          <span style="font-size:11px; opacity:0.8; font-weight:normal">Apre il manuale dall'inizio</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Help on line (manuale applicazione) -->
 <div id="app-help-overlay" class="comp-help-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="app-help-heading">
   <div class="comp-help-dialog app-help-dialog">
@@ -1148,7 +1174,7 @@
          autocomplete="off" spellcheck="false"/>
 </div>
 
-<script src="{% static 'js/component-registry.js' %}?v=20260525-2"></script>
+<script src="{% static 'js/component-registry.js' %}?v=20260528-5"></script>
 <script src="{% static 'js/circuit-canvas.js' %}?v=20260525-3"></script>
 <script src="{% static 'js/current-animator.js' %}"></script>
 <script src="{% static 'js/chart-theme.js' %}"></script>
@@ -1161,6 +1187,6 @@
 <script src="{% static 'js/app-help.js' %}"></script>
 <script src="{% static 'js/calculator.js' %}"></script>
 <script src="{% static 'js/tools.js' %}?v=20260528-3"></script>
-<script src="{% static 'js/app.js' %}?v=20260527-2"></script>
+<script src="{% static 'js/app.js' %}?v=20260528-5"></script>
 </body>
 </html>

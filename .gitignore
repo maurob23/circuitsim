@@ -42,8 +42,9 @@ Thumbs.db
 # Node
 node_modules/
 
-# Local reference manuals
+# Local reference manuals (place PDFs locally, do not commit)
 static/docs/*.pdf
+books/
 
 # Coverage / test artifacts
 .coverage

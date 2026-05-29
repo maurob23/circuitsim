@@ -171,30 +171,30 @@ window.CIRCUIT_COMPONENT_REGISTRY = Object.freeze({
 window.CIRCUIT_MANUAL_REGISTRY = Object.freeze({
   passivi: {
     title: 'Componenti passivi',
-    url: '/static/docs/practical-electronics-for-inventors.pdf#page=71',
+    url: '/static/practical-electronics-for-inventors.pdf#page=71',
   },
   attivi: {
     title: 'Componenti attivi',
-    url: '/static/docs/practical-electronics-for-inventors.pdf#page=423',
+    url: '/static/practical-electronics-for-inventors.pdf#page=423',
   },
   alimentatori: {
     title: 'Alimentatori e sorgenti',
-    url: '/static/docs/practical-electronics-for-inventors.pdf#page=847',
+    url: '/static/practical-electronics-for-inventors.pdf#page=847',
   },
   trasformatori: {
     title: 'Trasformatori',
-    url: '/static/docs/practical-electronics-for-inventors.pdf#page=879',
+    url: '/static/practical-electronics-for-inventors.pdf#page=879',
   },
   mcu: {
     title: 'Microcontrollori',
-    url: '/static/docs/practical-electronics-for-inventors.pdf#page=1019',
+    url: '/static/practical-electronics-for-inventors.pdf#page=1019',
   },
   digitale: {
     title: 'Elettronica digitale',
-    url: '/static/docs/practical-electronics-for-inventors.pdf#page=941',
+    url: '/static/practical-electronics-for-inventors.pdf#page=941',
   },
   strumenti: {
     title: 'Strumenti di misura',
-    url: '/static/docs/practical-electronics-for-inventors.pdf#page=1125',
+    url: '/static/practical-electronics-for-inventors.pdf#page=1125',
   },
 });

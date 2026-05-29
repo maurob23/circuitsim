@@ -757,6 +757,80 @@ function _initManualLinks() {
     document.addEventListener(eventName, stopManualEvent, true);
   });
 
+  let _currentManualTopic = null;
+
+  function _ensureOverlayExists() {
+    let overlay = document.getElementById('book-select-overlay');
+    if (!overlay) {
+      document.body.insertAdjacentHTML('beforeend', `
+        <div id="book-select-overlay" class="calc-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="book-select-title">
+          <div class="calc-dialog" style="max-width: 380px;">
+            <div class="calc-header">
+              <span class="calc-title" id="book-select-title">Scegli il manuale</span>
+              <button type="button" id="book-select-close" class="comp-help-close" aria-label="Chiudi">✕</button>
+            </div>
+            <div class="calc-body">
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" class="calc-elec-btn" data-book-id="inventors" style="text-align:left; height:auto; padding:10px">
+                  <strong>Practical Electronics for Inventors</strong><br>
+                  <span style="font-size:11px; opacity:0.8; font-weight:normal">Apre alla pagina del componente (se configurata)</span>
+                </button>
+                <button type="button" class="calc-elec-btn" data-book-id="art" style="text-align:left; height:auto; padding:10px">
+                  <strong>The Art of Electronics</strong><br>
+                  <span style="font-size:11px; opacity:0.8; font-weight:normal">Apre il manuale dall'inizio</span>
+                </button>
+                <button type="button" class="calc-elec-btn" data-book-id="guitarists" style="text-align:left; height:auto; padding:10px">
+                  <strong>Electronics for Guitarists</strong><br>
+                  <span style="font-size:11px; opacity:0.8; font-weight:normal">Apre il manuale dall'inizio</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+      overlay = document.getElementById('book-select-overlay');
+
+      // Bind events for the newly created overlay
+      document.getElementById('book-select-close')?.addEventListener('click', () => {
+        overlay.style.display = 'none';
+      });
+
+      overlay.querySelectorAll('.calc-elec-btn[data-book-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          overlay.style.display = 'none';
+          if (!_currentManualTopic) return;
+          
+          const topic = _currentManualTopic;
+          const bookId = btn.dataset.bookId;
+          const manual = manuals[topic];
+
+          try {
+            const resp = await fetch('/api/manual/open/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ topic, book: bookId }),
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+              if (bookId === 'inventors') window.open(manual.url, '_blank', 'noopener');
+              else if (bookId === 'art') window.open('/static/the-art-of-electronics.pdf', '_blank', 'noopener');
+              else if (bookId === 'guitarists') window.open('/static/electronics-for-guitarists.pdf', '_blank', 'noopener');
+              setStatus(data.error || 'Apro il manuale nel browser', 'warn');
+              return;
+            }
+            setStatus(`Manuale aperto: ${bookId === 'inventors' ? manual.title : bookId}`, 'ok');
+          } catch (_err) {
+            if (bookId === 'inventors') window.open(manual.url, '_blank', 'noopener');
+            else if (bookId === 'art') window.open('/static/the-art-of-electronics.pdf', '_blank', 'noopener');
+            else if (bookId === 'guitarists') window.open('/static/electronics-for-guitarists.pdf', '_blank', 'noopener');
+            setStatus('Backend non raggiungibile: apro il manuale nel browser', 'warn');
+          }
+        });
+      });
+    }
+    return overlay;
+  }
+
   document.addEventListener('click', async e => {
     const btn = e.target?.closest?.('.comp-cat-manual-btn[data-manual-topic]');
     if (!btn) return;
@@ -771,24 +845,51 @@ function _initManualLinks() {
       return;
     }
 
-    try {
-      const resp = await fetch('/api/manual/open/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: btn.dataset.manualTopic }),
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        window.open(manual.url, '_blank', 'noopener');
-        setStatus(data.error || 'Apro il manuale nel browser', 'warn');
-        return;
-      }
-      setStatus(`Manuale aperto: ${manual.title}`, 'ok');
-    } catch (_err) {
-      window.open(manual.url, '_blank', 'noopener');
-      setStatus('Backend non raggiungibile: apro il manuale nel browser', 'warn');
-    }
+    _currentManualTopic = btn.dataset.manualTopic;
+    const overlay = _ensureOverlayExists();
+    overlay.style.display = 'flex';
   }, true);
+
+  // We can remove the old global bindings since we do it inside _ensureOverlayExists
+  // But to be safe against caching scenarios, we just let them fail silently if not found.
+  document.getElementById('book-select-close')?.addEventListener('click', () => {
+    const overlay = document.getElementById('book-select-overlay');
+    if (overlay) overlay.style.display = 'none';
+  });
+
+  document.querySelectorAll('#book-select-overlay .calc-elec-btn[data-book-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const overlay = document.getElementById('book-select-overlay');
+      if (overlay) overlay.style.display = 'none';
+      if (!_currentManualTopic) return;
+      
+      const topic = _currentManualTopic;
+      const bookId = btn.dataset.bookId;
+      const manual = manuals[topic];
+
+      try {
+        const resp = await fetch('/api/manual/open/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, book: bookId }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          if (bookId === 'inventors') window.open(manual.url, '_blank', 'noopener');
+          else if (bookId === 'art') window.open('/static/the-art-of-electronics.pdf', '_blank', 'noopener');
+          else if (bookId === 'guitarists') window.open('/static/electronics-for-guitarists.pdf', '_blank', 'noopener');
+          setStatus(data.error || 'Apro il manuale nel browser', 'warn');
+          return;
+        }
+        setStatus(`Manuale aperto: ${bookId === 'inventors' ? manual.title : bookId}`, 'ok');
+      } catch (_err) {
+        if (bookId === 'inventors') window.open(manual.url, '_blank', 'noopener');
+        else if (bookId === 'art') window.open('/static/the-art-of-electronics.pdf', '_blank', 'noopener');
+        else if (bookId === 'guitarists') window.open('/static/electronics-for-guitarists.pdf', '_blank', 'noopener');
+        setStatus('Backend non raggiungibile: apro il manuale nel browser', 'warn');
+      }
+    });
+  });
 
   document.querySelectorAll('.comp-cat-manual-btn[data-manual-topic]').forEach(btn => {
     btn.addEventListener('keydown', e => {

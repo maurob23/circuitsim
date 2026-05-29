@@ -14,7 +14,7 @@ from services.translation import TranslationError, translate_text
 from solver.router import route_simulation
 
 
-MANUAL_PDF_PATH = settings.BASE_DIR / "static" / "docs" / "practical-electronics-for-inventors.pdf"
+MANUAL_PDF_PATH = settings.BASE_DIR / "books" / "practical-electronics-for-inventors.pdf"
 
 
 MANUAL_TOPICS = {
@@ -107,22 +107,38 @@ class ManualOpenView(View):
         except (json.JSONDecodeError, ValueError) as exc:
             return JsonResponse({"error": f"Invalid JSON: {exc}"}, status=400)
 
-        topic = payload.get("topic")
-        page = MANUAL_TOPICS.get(topic)
-        if page is None:
-            return JsonResponse({"error": "Manuale non configurato per questa sezione"}, status=404)
+        book_id = payload.get("book", "inventors")
+        books = {
+            "inventors": "practical-electronics-for-inventors.pdf",
+            "art": "the-art-of-electronics.pdf",
+            "guitarists": "electronics-for-guitarists.pdf"
+        }
+        
+        book_filename = books.get(book_id)
+        if not book_filename:
+            return JsonResponse({"error": "Libro non valido"}, status=400)
 
-        if not MANUAL_PDF_PATH.exists():
+        topic = payload.get("topic")
+        page = None
+        
+        if book_id == "inventors":
+            page = MANUAL_TOPICS.get(topic)
+            if page is None:
+                return JsonResponse({"error": "Manuale non configurato per questa sezione"}, status=404)
+
+        pdf_path = settings.BASE_DIR / "books" / book_filename
+
+        if not pdf_path.exists():
             return JsonResponse(
                 {
                     "error": "PDF non trovato",
-                    "path": str(MANUAL_PDF_PATH),
+                    "path": str(pdf_path),
                 },
                 status=404,
             )
 
         try:
-            opened = open_manual(str(MANUAL_PDF_PATH), page=page)
+            opened = open_manual(str(pdf_path), page=page)
         except OSError as exc:
             return JsonResponse({"error": f"Impossibile aprire SumatraPDF: {exc}"}, status=500)
 
@@ -135,4 +151,4 @@ class ManualOpenView(View):
                 status=500,
             )
 
-        return JsonResponse({"status": "ok", "topic": topic, "page": page})
+        return JsonResponse({"status": "ok", "topic": topic, "book": book_id, "page": page})

@@ -24,6 +24,22 @@ _GND = frozenset({"gnd", "0", "GND"})
 # Public entry points
 # ---------------------------------------------------------------------------
 
+def build_mna_matrices(netlist: dict, omega: float = 0.0):
+    """
+    Build Tier-1 MNA system matrices for the provided netlist.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray, dict[str, int], list[dict], list[str]]
+        -> (A, b, node_idx, vsources, node_list)
+    """
+    node_list, node_idx, vsources = _build_topology(netlist["components"])
+    n_nodes = len(node_list)
+    n_src = len(vsources)
+    size = n_nodes + n_src
+    A, b = _build_mna(netlist["components"], node_idx, vsources, n_nodes, size, omega)
+    return A, b, node_idx, vsources, node_list
+
+
 def solve_ac(netlist: dict) -> dict:
     """AC sweep: returns frequency, magnitude (dB), phase (°) arrays."""
     analysis = netlist["analysis"]
@@ -34,10 +50,7 @@ def solve_ac(netlist: dict) -> dict:
     n_pts = max(2, int(decades * ppd))
     frequencies = np.logspace(np.log10(start), np.log10(stop), n_pts)
 
-    node_list, node_idx, vsources = _build_topology(netlist["components"])
-    n_nodes = len(node_list)
-    n_src = len(vsources)
-    size = n_nodes + n_src
+    _, _, node_idx, vsources, _ = build_mna_matrices(netlist, omega=0.0)
 
     output_node = _resolve_output_node(netlist, node_idx)
     v_in_mag = _source_amplitude(vsources)
@@ -47,9 +60,7 @@ def solve_ac(netlist: dict) -> dict:
 
     for freq in frequencies:
         omega = 2.0 * np.pi * freq
-        A, b = _build_mna(
-            netlist["components"], node_idx, vsources, n_nodes, size, omega
-        )
+        A, b, _, _, _ = build_mna_matrices(netlist, omega=omega)
         try:
             v = np.linalg.solve(A, b)
         except np.linalg.LinAlgError:
@@ -382,14 +393,7 @@ def _compute_sine_metrics(
 
 def solve_dc(netlist: dict) -> dict:
     """DC operating point: capacitors → open circuit, inductors → short circuit."""
-    node_list, node_idx, vsources = _build_topology(netlist["components"])
-    n_nodes = len(node_list)
-    n_src = len(vsources)
-    size = n_nodes + n_src
-
-    A, b = _build_mna(
-        netlist["components"], node_idx, vsources, n_nodes, size, omega=0.0
-    )
+    A, b, node_idx, _, _ = build_mna_matrices(netlist, omega=0.0)
     try:
         v = np.linalg.solve(A, b)
     except np.linalg.LinAlgError:

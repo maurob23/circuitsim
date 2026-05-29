@@ -47,6 +47,7 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     BASE_DIR / "frontend" / "static",
     BASE_DIR / "static",
+    BASE_DIR / "books",
 ]
 
 SUMATRA_PDF_PATH = None
